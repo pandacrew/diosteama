@@ -28,12 +28,19 @@ struct Quote {
     deleted_by: String,
     deleted_date: DateTime<Utc>,
 }
-
-impl ::std::fmt::Display for MiniQuote {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        write!(f, "{}", format!("{}\n\n-- Quote {} by {}", &self.quote, &self.recnum, &self.author))
+impl MiniQuote {
+    fn author_nick(&self) -> &str {
+        let i = &self.author.find("!").unwrap();
+        let (nick, _) = &self.author.split_at(*i);
+        nick
     }
 }
+impl ::std::fmt::Display for MiniQuote {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        write!(f, "{}", format!("{}\n\n-- Quote {} by {}", &self.quote, &self.recnum, &self.author_nick()))
+    }
+}
+
 impl ::std::fmt::Display for Quote {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         write!(f, "{}", format!("{}. {}", &self.recnum, &self.quote))
