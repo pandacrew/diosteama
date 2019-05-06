@@ -48,11 +48,12 @@ impl ::std::fmt::Display for Quote {
 }
 
 fn main() {
-    let pool = my::Pool::new("mysql://itorres:7419a533-3dee-4633-9049-c93950378b7a@db1:3306/quotes").unwrap();
+    let token = env::var("TELEGRAM_BOT_TOKEN").unwrap();
+    let db_url = env::var("DIOSTEAMA_DB_URL").unwrap();
+    let pool = my::Pool::new(db_url).unwrap();
     let mut core = Core::new().unwrap();
     println!("{}", rquote(&pool));
     
-    let token = env::var("TELEGRAM_BOT_TOKEN").unwrap();
     let api = Api::configure(token).build(core.handle()).unwrap();
 
     // Fetch new updates via long poll method
