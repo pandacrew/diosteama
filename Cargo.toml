@@ -1,0 +1,14 @@
+[package]
+name = "diosteama"
+version = "0.1.0"
+authors = ["Ignacio Torres Masdeu <i@itorres.net>"]
+edition = "2018"
+
+[dependencies]
+mysql = "16"
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+telegram-bot = "0.6"
+futures = "0.1"
+tokio-core = "*"
