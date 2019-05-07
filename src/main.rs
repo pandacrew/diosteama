@@ -109,7 +109,9 @@ fn quote(pool: &my::Pool, query: &str) -> String {
 fn quote_like(pool: &my::Pool, needle: &str) -> String {
     let ch = needle.chars().next().unwrap();
     if !ch.is_alphabetic() {
-        return format!("Usted necesita la forma A38");
+        return format!("{}: Usted necesita la forma A38", needle);
+    } else if needle.contains("'") {
+        return format!("{}: ¡El puerto sigue estando al lado del mar!", needle);
     }
     let query = format!("WHERE quote LIKE '%{}%' ORDER BY rand() LIMIT 1", needle);
     quote(pool, &query)
