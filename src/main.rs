@@ -1,5 +1,7 @@
 extern crate mysql;
 extern crate futures;
+extern crate rand; // 0.6.0
+
 extern crate telegram_bot;
 extern crate tokio_core;
 
@@ -11,12 +13,7 @@ use telegram_bot::*;
 use mysql as my;
 use chrono::{DateTime, Utc, TimeZone};
 use serde::{Deserialize, Serialize};
-
-struct MiniQuote {
-    recnum: u32,
-    quote: String,
-    author: String,
-}
+use rand::Rng;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Quote {
@@ -24,26 +21,18 @@ struct Quote {
     quote: String,
     author: String,
     date: DateTime<Utc>,
-    deleted: String,
-    deleted_by: String,
-    deleted_date: DateTime<Utc>,
 }
-impl MiniQuote {
+
+impl Quote {
     fn author_nick(&self) -> &str {
         let i = &self.author.find("!").unwrap();
         let (nick, _) = &self.author.split_at(*i);
         nick
     }
 }
-impl ::std::fmt::Display for MiniQuote {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        write!(f, "{}", format!("{}\n\n-- Quote {} by {}", &self.quote, &self.recnum, &self.author_nick()))
-    }
-}
-
 impl ::std::fmt::Display for Quote {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        write!(f, "{}", format!("{}. {}", &self.recnum, &self.quote))
+        write!(f, "{}", format!("{}\n\n-- Quote {} by {} on {}", &self.quote, &self.recnum, &self.author_nick(), &self.date))
     }
 }
 
@@ -53,23 +42,23 @@ fn main() {
     let pool = my::Pool::new(db_url).unwrap();
     let mut core = Core::new().unwrap();
     println!("{}", rquote(&pool));
-    
-    let api = Api::configure(token).build(core.handle()).unwrap();
 
+    let api = Api::configure(token).build(core.handle()).unwrap();
+    let mut rng = rand::thread_rng();
     // Fetch new updates via long poll method
     let future = api.stream().for_each(|update| {
 
         // If the received update contains a new message...
         if let UpdateKind::Message(message) = update.kind {
-
+            let talk = rng.gen_range(1, 7) == 2;
             if let MessageKind::Text {ref data, ..} = message.kind {
                 // Print received text message to stdout.
                 println!("<{}>: {:?}", &message.from.first_name, &message);
                 let mut iter = data.split_whitespace();
                 let cmd = iter.next();
-                if cmd == Some("/rquote") {                    
+                if cmd == Some("/rquote") ||  cmd == Some("!rquote") {
                     api.spawn(message.chat.text(format!("{}", rquote(&pool))));
-                } else if cmd == Some("/quote") {
+                } else if cmd == Some("/quote") || cmd == Some("!quote") {
                     match iter.next() {
                         Some(qid) => match qid.parse::<u32>() {
                             Ok(qid) => api.spawn(message.chat.text(format!("{}", quote_num(&pool, qid)))),
@@ -77,6 +66,10 @@ fn main() {
                         }
                         None => api.spawn(message.chat.text(format!("{}", rquote(&pool)))),
                     }
+                } else if data.contains("fairy") && talk {
+                    api.spawn(message.chat.text("https://ytcropper.com/cropped/ew5cddf953ab0d1"));
+                } else if data.contains("dios") && talk {
+                    api.spawn(message.chat.text("¿Donde está dios cuando le necesitas, eh? ¿Donde está ese gran maricón misericordioso ahora? Aquí me tienes dios, ¡aquí me tienes cabronazo!\nhttps://www.youtube.com/watch?v=ec2V0tm4JGs"));
                 }
             }
         }
@@ -87,16 +80,17 @@ fn main() {
 }
 
 fn quote(pool: &my::Pool, query: &str) -> String {
-    let query = format!("SELECT recnum, quote, author FROM linux_gey_db {}", query);    
-    let result: Vec<MiniQuote> =
+    let query = format!("SELECT recnum, quote, author, date FROM linux_gey_db {}", query);
+    let result: Vec<Quote> =
     pool.prep_exec(query, ())
     .map(|result| {
         result.map(|x| x.unwrap()).map(|row| {
-            let (recnum, quote, author) = my::from_row(row);
-            MiniQuote {
+            let (recnum, quote, author, date) = my::from_row(row);
+            Quote {
                 recnum: recnum,
                 quote: quote,
                 author: author,
+                date: Utc.timestamp(date,0),
             }
         }).collect()
     }).unwrap();
@@ -113,7 +107,7 @@ fn quote_like(pool: &my::Pool, needle: &str) -> String {
     } else if needle.contains("'") {
         return format!("{}: ¡El puerto sigue estando al lado del mar!", needle);
     }
-    let query = format!("WHERE quote LIKE '%{}%' ORDER BY rand() LIMIT 1", needle);
+    let query = format!("WHERE quote LIKE '%{}%' ORDER BY rand() LIMIT 1", str::replace(needle,"*","%"));
     quote(pool, &query)
 }
 
@@ -130,4 +124,4 @@ fn rquote(pool: &my::Pool) -> String {
 
 // fn export() {
 //     serde_json::to_string_pretty(&result[0]).unwrap()
-// }    
+// }
