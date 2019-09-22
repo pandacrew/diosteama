@@ -80,7 +80,7 @@ func quote(q string) string {
 	err := db.QueryRow(fmt.Sprintf("%s %s", query, f)).Scan(&recnum, &quote, &author, &date)
 
 	if err != nil {
-		log.Fatal(err)
+		return("Quote no encontrado")
 	}
 	log.Println(recnum, quote, author, date)
 	split := strings.SplitN(author, "!", 2)
