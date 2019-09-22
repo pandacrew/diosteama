@@ -8,7 +8,7 @@ diosteama = rustPlatform.buildRustPackage rec {
   src = ./.;
   nativeBuildInputs = [ pkgconfig ];
   buildInputs = [ openssl ];
-  cargoSha256 = "0shxn6fd3y9ma165d0i58l6v6mkjmr07x88gkfrv34c310c6y5px";
+  cargoSha256 = "11iwd9fr7zyqgm5kainqighync90yp2lrsh1xal9yhriy3f6i2g5";
 };
 
 in
