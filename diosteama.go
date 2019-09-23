@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"html"
 	"log"
 	"os"
 	"strconv"
@@ -25,7 +26,7 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	quote("")
+	info(0)
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		log.Panic(err)
@@ -45,17 +46,67 @@ func main() {
 		if update.Message == nil { // ignore any non-Message Updates
 			continue
 		}
-		split := strings.SplitN(update.Message.Text, " ", 2)
+		split := strings.SplitN(update.Message.Text, " ", 3)
 		if split[0] == "!quote" || split[0] == "/quote" {
-			q := ""
-			if len(split) == 2 {
-				q = split[1]
+			var reply string
+			var err error
+			if len(split) == 1 { // rquote
+				reply, err = info(-1)
+				if err != nil {
+					log.Println("Error reading quote: ", err)
+					continue
+				}
+			} else if len(split) == 2 {
+				reply, err = quote(split[1], 0)
+				if err != nil {
+					log.Println("Error reading quote: ", err)
+					continue
+				}
+			} else {
+				offset, err := strconv.Atoi(split[2])
+				if err != nil {
+					reply = "Error. Format is !quote [search [offset]]"
+					continue
+				}
+				reply, err = quote(split[1], offset)
+				if err != nil {
+					log.Println("Error reading quote: ", err)
+					continue
+				}
 			}
-			reply, err := quote(q)
+			log.Println("Replying", reply)
+			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+			msg.ParseMode = "html"
+			msg.ReplyToMessageID = update.Message.MessageID
+			bot.Send(msg)
+		} else if split[0] == "!info" || split[0] == "/info" {
+			var reply string
+			if len(split) < 2 {
+				reply = "Error. Format is !info <quote id>"
+				continue
+			}
+			qid, err := strconv.Atoi(split[1])
+			if err != nil {
+				reply = "Error. Format is !info <quote id>"
+				continue
+			}
+			reply, err = info(qid)
 			if err != nil {
 				log.Println("Error reading quote: ", err)
+				continue
 			}
 			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+			msg.ParseMode = "html"
+			msg.ReplyToMessageID = update.Message.MessageID
+			bot.Send(msg)
+		} else if split[0] == "!rquote" || split[0] == "/rquote" {
+			reply, err := info(-1)
+			if err != nil {
+				log.Println("Error reading quote: ", err)
+				continue
+			}
+			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+			msg.ParseMode = "html"
 			msg.ReplyToMessageID = update.Message.MessageID
 			bot.Send(msg)
 		} else if split[0] == "!top" || split[0] == "/top" {
@@ -73,9 +124,9 @@ func main() {
 			if err != nil {
 				log.Println("Error reading top", err)
 			}
-			reply := strings.Join([]string{"```", r, "```"}, "")
+			reply := strings.Join([]string{"<pre>", r, "</pre>"}, "")
 			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
-			msg.ParseMode = "markdown"
+			msg.ParseMode = "html"
 			msg.ReplyToMessageID = update.Message.MessageID
 			bot.Send(msg)
 		} else {
@@ -84,7 +135,7 @@ func main() {
 	}
 }
 
-func quote(q string) (string, error) {
+func info(i int) (string, error) {
 	var (
 		recnum              int
 		date, author, quote string
@@ -92,25 +143,70 @@ func quote(q string) (string, error) {
 	)
 
 	query := "SELECT recnum, quote, author, date FROM linux_gey_db"
-	if q == "" {
+	if i < 1 {
 		log.Println("Random quote")
 		f = "ORDER BY rand() LIMIT 1"
-	} else if i, err := strconv.Atoi(q); err == nil {
-		log.Println("Quote by index")
-		f = fmt.Sprintf("WHERE recnum = %d", i)
 	} else {
-		f = fmt.Sprintf("WHERE quote LIKE '%%%s%%' ORDER BY rand() LIMIT 1", q)
+		f = fmt.Sprintf("WHERE recnum = %d", i)
 	}
 	err := db.QueryRow(fmt.Sprintf("%s %s", query, f)).Scan(&recnum, &quote, &author, &date)
 
 	if err != nil {
-		return "Quote no encontrado", err
+		return "Quote no encontrado", nil
 	}
 	log.Println(recnum, quote, author, date)
 	split := strings.SplitN(author, "!", 2)
 	nick := split[0]
 	//💩🔞🔪💥
-	return fmt.Sprintf("%s\n\n🚽 Quote %d by %s on %s", quote, recnum, nick, parseTime(date)), nil
+	return fmt.Sprintf("<pre>%s</pre>\n\n<em>🚽 Quote %d by %s on %s</em>", html.EscapeString(quote), recnum, html.EscapeString(nick), parseTime(date)), nil
+}
+
+func quote(q string, offset int) (string, error) {
+	var b strings.Builder
+	var err error
+	var count int
+	pq := strings.Replace(q, "*", "%", -1)
+	query := fmt.Sprintf(`
+	SELECT count(*)
+	FROM linux_gey_db WHERE quote LIKE '%%%s%%';`, pq)
+	err = db.QueryRow(query).Scan(&count)
+	if err != nil || count < 1 {
+		return fmt.Sprintf("Por %s no me sale nada", q), nil
+	}
+
+	query = fmt.Sprintf(`
+	SELECT recnum, quote
+	FROM linux_gey_db WHERE quote LIKE '%%%s%%' 
+	ORDER BY recnum ASC LIMIT 5 OFFSET %d;`, pq, offset)
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Printf("Error getting quotes for %s. Fuck you.", q)
+		return b.String(), err
+	}
+	defer rows.Close()
+	i := offset
+
+	for rows.Next() {
+		i++
+		var (
+			recnum int
+			quote  string
+		)
+		err := rows.Scan(&recnum, &quote)
+		if err != nil {
+			log.Printf("Error getting quotes. Fuck you all!")
+			return b.String(), err
+		}
+		fmt.Fprintf(&b, "%d. <code>%s</code>\n", recnum, html.EscapeString(quote))
+	}
+	fmt.Fprintf(&b, "\nQuotes %d a %d de %d buscando <code>%s</code>", offset+1, i, count, html.EscapeString(q))
+	err = rows.Err()
+	if err != nil {
+		log.Printf("Error in the final possible place getting quotes. Fuck you all! And especially you!")
+		return b.String(), err
+	}
+	log.Println(b.String())
+	return b.String(), err
 }
 
 func top(i int) (string, error) {
