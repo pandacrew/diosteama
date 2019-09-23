@@ -64,14 +64,14 @@ func main() {
 				}
 			} else {
 				offset, err := strconv.Atoi(split[2])
-				if err != nil {
-					reply = "Error. Format is !quote [search [offset]]"
-					continue
-				}
-				reply, err = quote(split[1], offset)
-				if err != nil {
-					log.Println("Error reading quote: ", err)
-					continue
+				if err != nil || offset < 0 {
+					reply = "Error. Format is <code>!quote [search [offset]]</code>"
+				} else {
+					reply, err = quote(split[1], offset)
+					if err != nil {
+						log.Println("Error reading quote: ", err)
+						continue
+					}
 				}
 			}
 			log.Println("Replying", reply)
