@@ -63,11 +63,11 @@ func main() {
 					continue
 				}
 			} else {
-				offset, err := strconv.Atoi(split[2])
+				offset, err := strconv.Atoi(split[1])
 				if err != nil || offset < 0 {
-					reply = "Error. Format is <code>!quote [search [offset]]</code>"
+					reply = "Error. Format is <code>!quote [[offset] search]</code>"
 				} else {
-					reply, err = quote(split[1], offset)
+					reply, err = quote(split[2], offset)
 					if err != nil {
 						log.Println("Error reading quote: ", err)
 						continue
