@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"encoding/json"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 )
@@ -21,7 +22,11 @@ func main() {
 	var err error
 	token := os.Getenv("TELEGRAM_BOT_TOKEN")
 	dbDsn := os.Getenv("DIOSTEAMA_DB_URL")
-	loc, _ = time.LoadLocation("Europe/Andorra")
+	loc, err = time.LoadLocation("Europe/Berlin")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	db, err = sql.Open("mysql", dbDsn)
 	if err != nil {
 		log.Panic(err)
@@ -129,8 +134,14 @@ func main() {
 			msg.ParseMode = "html"
 			msg.ReplyToMessageID = update.Message.MessageID
 			bot.Send(msg)
+		} else if strings.Contains(strings.ToLower(update.Message.Text), "almeida") {
+			reply := "¡¡CARAPOLLA!!"
+			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+			bot.Send(msg)
 		} else {
 			log.Printf("[%s] %s (%v)", update.Message.From.UserName, update.Message.Text, update.Message.IsCommand())
+			j, _ := json.Marshal(update.Message)
+			log.Printf("%s", j)
 		}
 	}
 }
@@ -152,6 +163,7 @@ func info(i int) (string, error) {
 	err := db.QueryRow(fmt.Sprintf("%s %s", query, f)).Scan(&recnum, &quote, &author, &date)
 
 	if err != nil {
+		log.Printf("Error consultando DB: %s", err)
 		return "Quote no encontrado", nil
 	}
 	log.Println(recnum, quote, author, date)
