@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"html"
 	"log"
@@ -10,12 +9,13 @@ import (
 	"strings"
 	"time"
 
+	"context"
 	"encoding/json"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/jackc/pgx/v4"
 )
 
-var db *sql.DB
+var conn *pgx.Conn
 var loc *time.Location
 
 func main() {
@@ -27,7 +27,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	db, err = sql.Open("mysql", dbDsn)
+	conn, err = pgx.Connect(context.Background(), dbDsn)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -156,11 +156,11 @@ func info(i int) (string, error) {
 	query := "SELECT recnum, quote, author, date FROM linux_gey_db"
 	if i < 1 {
 		log.Println("Random quote")
-		f = "ORDER BY rand() LIMIT 1"
+		f = "ORDER BY random() LIMIT 1"
 	} else {
 		f = fmt.Sprintf("WHERE recnum = %d", i)
 	}
-	err := db.QueryRow(fmt.Sprintf("%s %s", query, f)).Scan(&recnum, &quote, &author, &date)
+	err := conn.QueryRow(context.Background(), fmt.Sprintf("%s %s", query, f)).Scan(&recnum, &quote, &author, &date)
 
 	if err != nil {
 		log.Printf("Error consultando DB: %s", err)
@@ -180,17 +180,17 @@ func quote(q string, offset int) (string, error) {
 	pq := strings.Replace(q, "*", "%", -1)
 	query := fmt.Sprintf(`
 	SELECT count(*)
-	FROM linux_gey_db WHERE quote LIKE '%%%s%%';`, pq)
-	err = db.QueryRow(query).Scan(&count)
+	FROM linux_gey_db WHERE LOWER(quote) LIKE LOWER('%%%s%%');`, pq)
+	err = conn.QueryRow(context.Background(), query).Scan(&count)
 	if err != nil || count < 1 {
 		return fmt.Sprintf("Por %s no me sale nada", q), nil
 	}
 
 	query = fmt.Sprintf(`
 	SELECT recnum, quote
-	FROM linux_gey_db WHERE quote LIKE '%%%s%%' 
+	FROM linux_gey_db WHERE LOWER(quote) LIKE LOWER('%%%s%%')
 	ORDER BY recnum ASC LIMIT 5 OFFSET %d;`, pq, offset)
-	rows, err := db.Query(query)
+	rows, err := conn.Query(context.Background(), query)
 	if err != nil {
 		log.Printf("Error getting quotes for %s. Fuck you.", q)
 		return b.String(), err
@@ -227,7 +227,7 @@ func top(i int) (string, error) {
 	if i < 0 {
 		i = 10
 	}
-	rows, err := db.Query("select count(*) as c, substring_index(author, '!', 1) as a from linux_gey_db group by a order by c desc limit ?;", i)
+	rows, err := conn.Query(context.Background(), "select count(*) as c, substring_index(author, '!', 1) as a from linux_gey_db group by a order by c desc limit ?;", i)
 	if err != nil {
 		log.Printf("Error listing top %d. Fuck you.", i)
 		return b.String(), err
