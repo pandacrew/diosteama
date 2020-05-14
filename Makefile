@@ -1,4 +1,4 @@
 sync: diosteama
-	scp diosteama ubuntu@172.23.0.154:
+	scp diosteama root@fary.pandacrew.net:
 diosteama:
-	go build
+	CGO_ENABLED=0 go build
