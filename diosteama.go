@@ -82,7 +82,6 @@ func main() {
 			log.Println("Replying", reply)
 			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 			msg.ParseMode = "html"
-			msg.ReplyToMessageID = update.Message.MessageID
 			bot.Send(msg)
 		} else if split[0] == "!info" || split[0] == "/info" {
 			var reply string
@@ -102,7 +101,6 @@ func main() {
 			}
 			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 			msg.ParseMode = "html"
-			msg.ReplyToMessageID = update.Message.MessageID
 			bot.Send(msg)
 		} else if split[0] == "!rquote" || split[0] == "/rquote" {
 			reply, err := info(-1)
@@ -112,7 +110,6 @@ func main() {
 			}
 			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 			msg.ParseMode = "html"
-			msg.ReplyToMessageID = update.Message.MessageID
 			bot.Send(msg)
 		} else if split[0] == "!top" || split[0] == "/top" {
 			var i int
@@ -132,12 +129,37 @@ func main() {
 			reply := strings.Join([]string{"<pre>", r, "</pre>"}, "")
 			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 			msg.ParseMode = "html"
-			msg.ReplyToMessageID = update.Message.MessageID
+			bot.Send(msg)
+		} else if split[0] == "!culote" || split[0] == "/culote" {
+			if len(split) == 1 { // rquote
+				continue
+			}
+			reply := fmt.Sprintf("%s, tienes un culote como para meter %s", update.Message.From.FirstName, strings.Join(split[1:], " "))
+			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+			bot.Send(msg)
+		} else if split[0] == "!chuches" || split[0] == "/chuches" {
+			var reply string
+			if len(split) == 1 { // rquote
+				reply = fmt.Sprintf("%s, tienes el monopolio de las chuches, no seas avaricioso", update.Message.From.FirstName)
+			} else {
+				reply = fmt.Sprintf("%s, %s te va a comprar una booolsa de chuuuuches", split[1], update.Message.From.FirstName)
+			}
+
+			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 			bot.Send(msg)
 		} else if strings.Contains(strings.ToLower(update.Message.Text), "almeida") {
 			reply := "¡¡CARAPOLLA!!"
 			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 			bot.Send(msg)
+		} else if strings.Contains(strings.ToLower(update.Message.Text), "carme") {
+			reply := "PUTAAAAAAAAAA"
+			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+			bot.Send(msg)
+		} else if strings.Contains(strings.ToLower(update.Message.Text), "gamba") {
+			reply := "MARIPURI!"
+			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+			bot.Send(msg)
+
 		} else {
 			log.Printf("[%s] %s (%v)", update.Message.From.UserName, update.Message.Text, update.Message.IsCommand())
 			j, _ := json.Marshal(update.Message)
