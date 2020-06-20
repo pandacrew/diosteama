@@ -20,9 +20,10 @@ var loc *time.Location
 
 func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	var msg tgbotapi.MessageConfig
+	var reply string
 	split := strings.SplitN(update.Message.Text, " ", 3)
-	if split[0] == "!quote" || split[0] == "/quote" {
-		var reply string
+	switch cmd := split[0][1:]; cmd {
+	case "quote":
 		var err error
 		if len(split) == 1 { // rquote
 			reply, err = info(-1)
@@ -49,8 +50,7 @@ func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 		msg.ParseMode = "html"
 		bot.Send(msg)
-	} else if split[0] == "!info" || split[0] == "/info" {
-		var reply string
+	case "info":
 		if len(split) < 2 {
 			reply = "Error. Format is !info <quote id>"
 		}
@@ -67,7 +67,7 @@ func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 		msg.ParseMode = "html"
 		bot.Send(msg)
-	} else if split[0] == "!rquote" || split[0] == "/rquote" {
+	case "rquote":
 		reply, err := info(-1)
 		if err != nil {
 			log.Println("Error reading quote: ", err)
@@ -76,7 +76,7 @@ func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 		msg.ParseMode = "html"
 		bot.Send(msg)
-	} else if split[0] == "!top" || split[0] == "/top" {
+	case "top":
 		var i int
 		if len(split) == 2 {
 			var err error
@@ -91,19 +91,15 @@ func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		if err != nil {
 			log.Println("Error reading top", err)
 		}
-		reply := strings.Join([]string{"<pre>", r, "</pre>"}, "")
+		reply = strings.Join([]string{"<pre>", r, "</pre>"}, "")
 		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 		msg.ParseMode = "html"
 		bot.Send(msg)
-	} else if split[0] == "!culote" || split[0] == "/culote" {
-		if len(split) == 1 { // rquote
-
-		}
-		reply := fmt.Sprintf("%s, tienes un culote como para meter %s", update.Message.From.FirstName, strings.Join(split[1:], " "))
+	case "culote":
+		reply = fmt.Sprintf("%s, tienes un culote como para meter %s", update.Message.From.FirstName, strings.Join(split[1:], " "))
 		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 		bot.Send(msg)
-	} else if split[0] == "!chuches" || split[0] == "/chuches" {
-		var reply string
+	case "chuches":
 		if len(split) == 1 { // rquote
 			reply = fmt.Sprintf("%s, tienes el monopolio de las chuches, no seas avaricioso", update.Message.From.FirstName)
 		} else {
@@ -157,7 +153,7 @@ func main() {
 	}
 }
 
-func eval_addquote(msg tgbotapi.Message) {
+func eval_addquote(msg tgbotapi.Update) {
 }
 
 func response(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
