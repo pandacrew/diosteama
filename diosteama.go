@@ -18,6 +18,104 @@ import (
 var conn *pgx.Conn
 var loc *time.Location
 
+func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	var msg tgbotapi.MessageConfig
+	split := strings.SplitN(update.Message.Text, " ", 3)
+	if split[0] == "!quote" || split[0] == "/quote" {
+		var reply string
+		var err error
+		if len(split) == 1 { // rquote
+			reply, err = info(-1)
+			if err != nil {
+				log.Println("Error reading quote: ", err)
+			}
+		} else if len(split) == 2 {
+			reply, err = quote(split[1], 0)
+			if err != nil {
+				log.Println("Error reading quote: ", err)
+			}
+		} else {
+			offset, err := strconv.Atoi(split[1])
+			if err != nil || offset < 0 {
+				reply = "Error. Format is <code>!quote [[offset] search]</code>"
+			} else {
+				reply, err = quote(split[2], offset)
+				if err != nil {
+					log.Println("Error reading quote: ", err)
+				}
+			}
+		}
+		log.Println("Replying", reply)
+		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+		msg.ParseMode = "html"
+		bot.Send(msg)
+	} else if split[0] == "!info" || split[0] == "/info" {
+		var reply string
+		if len(split) < 2 {
+			reply = "Error. Format is !info <quote id>"
+		}
+		qid, err := strconv.Atoi(split[1])
+		if err != nil {
+			reply = "Error. Format is !info <quote id>"
+
+		}
+		reply, err = info(qid)
+		if err != nil {
+			log.Println("Error reading quote: ", err)
+
+		}
+		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+		msg.ParseMode = "html"
+		bot.Send(msg)
+	} else if split[0] == "!rquote" || split[0] == "/rquote" {
+		reply, err := info(-1)
+		if err != nil {
+			log.Println("Error reading quote: ", err)
+
+		}
+		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+		msg.ParseMode = "html"
+		bot.Send(msg)
+	} else if split[0] == "!top" || split[0] == "/top" {
+		var i int
+		if len(split) == 2 {
+			var err error
+			i, err = strconv.Atoi(split[1])
+			if err != nil {
+				i = 10
+			}
+		} else {
+			i = 10
+		}
+		r, err := top(i)
+		if err != nil {
+			log.Println("Error reading top", err)
+		}
+		reply := strings.Join([]string{"<pre>", r, "</pre>"}, "")
+		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+		msg.ParseMode = "html"
+		bot.Send(msg)
+	} else if split[0] == "!culote" || split[0] == "/culote" {
+		if len(split) == 1 { // rquote
+
+		}
+		reply := fmt.Sprintf("%s, tienes un culote como para meter %s", update.Message.From.FirstName, strings.Join(split[1:], " "))
+		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+		bot.Send(msg)
+	} else if split[0] == "!chuches" || split[0] == "/chuches" {
+		var reply string
+		if len(split) == 1 { // rquote
+			reply = fmt.Sprintf("%s, tienes el monopolio de las chuches, no seas avaricioso", update.Message.From.FirstName)
+		} else {
+			reply = fmt.Sprintf("%s, %s te va a comprar una booolsa de chuuuuches", split[1], update.Message.From.FirstName)
+		}
+
+		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+		bot.Send(msg)
+	}
+
+}
+
 func main() {
 	var err error
 	token := os.Getenv("TELEGRAM_BOT_TOKEN")
@@ -47,127 +145,39 @@ func main() {
 	updates, err := bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		var msg tgbotapi.MessageConfig
+		j, _ := json.Marshal(update)
+		log.Printf("%s", j)
 		if update.Message == nil { // ignore any non-Message Updates
 			continue
 		}
-		split := strings.SplitN(update.Message.Text, " ", 3)
-		if split[0] == "!quote" || split[0] == "/quote" {
-			var reply string
-			var err error
-			if len(split) == 1 { // rquote
-				reply, err = info(-1)
-				if err != nil {
-					log.Println("Error reading quote: ", err)
-					continue
-				}
-			} else if len(split) == 2 {
-				reply, err = quote(split[1], 0)
-				if err != nil {
-					log.Println("Error reading quote: ", err)
-					continue
-				}
-			} else {
-				offset, err := strconv.Atoi(split[1])
-				if err != nil || offset < 0 {
-					reply = "Error. Format is <code>!quote [[offset] search]</code>"
-				} else {
-					reply, err = quote(split[2], offset)
-					if err != nil {
-						log.Println("Error reading quote: ", err)
-						continue
-					}
-				}
-			}
-			log.Println("Replying", reply)
-			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
-			msg.ParseMode = "html"
-			bot.Send(msg)
-		} else if split[0] == "!info" || split[0] == "/info" {
-			var reply string
-			if len(split) < 2 {
-				reply = "Error. Format is !info <quote id>"
-				continue
-			}
-			qid, err := strconv.Atoi(split[1])
-			if err != nil {
-				reply = "Error. Format is !info <quote id>"
-				continue
-			}
-			reply, err = info(qid)
-			if err != nil {
-				log.Println("Error reading quote: ", err)
-				continue
-			}
-			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
-			msg.ParseMode = "html"
-			bot.Send(msg)
-		} else if split[0] == "!rquote" || split[0] == "/rquote" {
-			reply, err := info(-1)
-			if err != nil {
-				log.Println("Error reading quote: ", err)
-				continue
-			}
-			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
-			msg.ParseMode = "html"
-			bot.Send(msg)
-		} else if split[0] == "!top" || split[0] == "/top" {
-			var i int
-			if len(split) == 2 {
-				var err error
-				i, err = strconv.Atoi(split[1])
-				if err != nil {
-					i = 10
-				}
-			} else {
-				i = 10
-			}
-			r, err := top(i)
-			if err != nil {
-				log.Println("Error reading top", err)
-			}
-			reply := strings.Join([]string{"<pre>", r, "</pre>"}, "")
-			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
-			msg.ParseMode = "html"
-			bot.Send(msg)
-		} else if split[0] == "!culote" || split[0] == "/culote" {
-			if len(split) == 1 { // rquote
-				continue
-			}
-			reply := fmt.Sprintf("%s, tienes un culote como para meter %s", update.Message.From.FirstName, strings.Join(split[1:], " "))
-			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
-			bot.Send(msg)
-		} else if split[0] == "!chuches" || split[0] == "/chuches" {
-			var reply string
-			if len(split) == 1 { // rquote
-				reply = fmt.Sprintf("%s, tienes el monopolio de las chuches, no seas avaricioso", update.Message.From.FirstName)
-			} else {
-				reply = fmt.Sprintf("%s, %s te va a comprar una booolsa de chuuuuches", split[1], update.Message.From.FirstName)
-			}
 
-			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
-			bot.Send(msg)
-		} else if strings.Contains(strings.ToLower(update.Message.Text), "almeida") {
-			reply := "¡¡CARAPOLLA!!"
-			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
-			bot.Send(msg)
-		} else if strings.Contains(strings.ToLower(update.Message.Text), "carme") {
-			reply := "PUTAAAAAAAAAA"
-			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
-			bot.Send(msg)
-		} else if strings.Contains(strings.ToLower(update.Message.Text), "gamba") {
-			reply := "MARIPURI!"
-			msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
-			bot.Send(msg)
+		response(update, bot)
+		log.Printf("[%s] %s (%v)", update.Message.From.UserName, update.Message.Text, update.Message.IsCommand())
 
-		} else {
-			log.Printf("[%s] %s (%v)", update.Message.From.UserName, update.Message.Text, update.Message.IsCommand())
-			j, _ := json.Marshal(update.Message)
-			log.Printf("%s", j)
-		}
 	}
 }
 
+func eval_addquote(msg tgbotapi.Message) {
+}
+
+func response(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	var msg tgbotapi.MessageConfig
+	if string(update.Message.Text[0]) == "!" || string(update.Message.Text[0]) == "/" {
+		command(update, bot)
+	} else if strings.Contains(strings.ToLower(update.Message.Text), "almeida") {
+		reply := "¡¡CARAPOLLA!!"
+		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+		bot.Send(msg)
+	} else if strings.Contains(strings.ToLower(update.Message.Text), "carme") {
+		reply := "PUTAAAAAAAAAA"
+		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+		bot.Send(msg)
+	} else if strings.Contains(strings.ToLower(update.Message.Text), "gamba") {
+		reply := "MARIPURI!"
+		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+		bot.Send(msg)
+	}
+}
 func info(i int) (string, error) {
 	var (
 		recnum              int
