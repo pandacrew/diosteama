@@ -158,7 +158,7 @@ func eval_addquote(msg tgbotapi.Update) {
 
 func response(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	var msg tgbotapi.MessageConfig
-	if string(update.Message.Text[0]) == "!" || string(update.Message.Text[0]) == "/" {
+	if len(update.Message.Text) > 0 && (string(update.Message.Text[0]) == "!" || string(update.Message.Text[0]) == "/") {
 		command(update, bot)
 	} else if strings.Contains(strings.ToLower(update.Message.Text), "almeida") {
 		reply := "¡¡CARAPOLLA!!"
