@@ -12,10 +12,10 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-var conn *pgx.Conn
+var pool *pgxpool.Pool
 var loc *time.Location
 var addquotePool map[int]Addquote
 var addquoteWait time.Duration
@@ -134,10 +134,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	conn, err = pgx.Connect(context.Background(), dbDsn)
+	pool, err = pgxpool.Connect(context.Background(), dbDsn)
 	if err != nil {
-		log.Panic(err)
+		log.Panic("Can't create pool", err)
 	}
+
 	info(0)
 	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
@@ -193,11 +194,15 @@ func save_addquote(uid int, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		date := strconv.Itoa(update.Message.Date)
 		quote := format_quote(existing.Messages)
 		author := update.Message.From.FirstName // This would be better with a map of telegram users to irc nicks
-		_, err := conn.Exec(context.Background(), query, recnum, date, author, quote, existing.Messages, update.Message.From)
+		_, err := pool.Exec(context.Background(), query, recnum, date, author, quote, existing.Messages, update.Message.From)
 
 		if err != nil {
-			log.Fatal(err)
+			//time.Sleep(addquoteWait)
+			//save_addquote(uid, update, bot)
+			log.Fatalf("Error saving quote %d: %v", recnum, err)
 		}
+
+		log.Printf("Saved quote %d for %d, %s, %s", recnum, uid, update.Message.From, update.Message.Date)
 
 		added := fmt.Sprintf("Quote added: %d", recnum)
 		log.Println(added)
@@ -205,7 +210,7 @@ func save_addquote(uid int, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		msg.ParseMode = "html"
 		bot.Send(msg)
 		delete(addquotePool, uid)
-		log.Printf("Saving quote %d for %d, %s, %s", recnum, uid, update.Message.From, update.Message.Date)
+		log.Printf("Cleanup of addquotePool[%d]", uid)
 	} else {
 		log.Printf("weird error condition, we were called without an existing pool")
 
@@ -213,7 +218,7 @@ func save_addquote(uid int, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 }
 func next_quote() int {
 	var recnum int
-	err := conn.QueryRow(context.Background(), "select max(recnum) from linux_gey_db").Scan(&recnum)
+	err := pool.QueryRow(context.Background(), "select max(recnum) from linux_gey_db").Scan(&recnum)
 	if err != nil {
 		return -1
 	}
@@ -240,9 +245,9 @@ func start_addquote(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		return
 	}
 	if existing, exists := addquotePool[uid]; exists {
+		// Stop timer for previous addquote, save and start a new one
 		existing.Timer.Stop()
 		save_addquote(uid, update, bot)
-		// Stop timer for previous addquote, save and start a new one
 	}
 	commit := func() {
 		log.Printf("Expired timer for %d, %s, %s", uid, update.Message.From, update.Message.Date)
@@ -291,7 +296,7 @@ func info(i int) (string, error) {
 	} else {
 		f = fmt.Sprintf("WHERE recnum = %d", i)
 	}
-	err := conn.QueryRow(context.Background(), fmt.Sprintf("%s %s", query, f)).Scan(&recnum, &quote, &author, &date)
+	err := pool.QueryRow(context.Background(), fmt.Sprintf("%s %s", query, f)).Scan(&recnum, &quote, &author, &date)
 
 	if err != nil {
 		log.Printf("Error consultando DB: %s", err)
@@ -312,7 +317,7 @@ func quote(q string, offset int) (string, error) {
 	query := fmt.Sprintf(`
 	SELECT count(*)
 	FROM linux_gey_db WHERE LOWER(quote) LIKE LOWER('%%%s%%');`, pq)
-	err = conn.QueryRow(context.Background(), query).Scan(&count)
+	err = pool.QueryRow(context.Background(), query).Scan(&count)
 	if err != nil || count < 1 {
 		return fmt.Sprintf("Por %s no me sale nada", q), nil
 	}
@@ -321,7 +326,7 @@ func quote(q string, offset int) (string, error) {
 	SELECT recnum, quote
 	FROM linux_gey_db WHERE LOWER(quote) LIKE LOWER('%%%s%%')
 	ORDER BY recnum ASC LIMIT 5 OFFSET %d;`, pq, offset)
-	rows, err := conn.Query(context.Background(), query)
+	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
 		log.Printf("Error getting quotes for %s. Fuck you.", q)
 		return b.String(), err
@@ -358,7 +363,7 @@ func top(i int) (string, error) {
 	if i < 0 {
 		i = 10
 	}
-	rows, err := conn.Query(context.Background(), "select count(*) as c, substring_index(author, '!', 1) as a from linux_gey_db group by a order by c desc limit ?;", i)
+	rows, err := pool.Query(context.Background(), "select count(*) as c, substring_index(author, '!', 1) as a from linux_gey_db group by a order by c desc limit ?;", i)
 	if err != nil {
 		log.Printf("Error listing top %d. Fuck you.", i)
 		return b.String(), err
