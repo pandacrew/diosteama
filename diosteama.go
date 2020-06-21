@@ -187,6 +187,9 @@ func save_addquote(uid int, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	INSERT INTO linux_gey_db (recnum, date, author, quote, telegram_messages, telegram_author)
 	VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb)
 	`
+		if len(existing.Messages) < 1 {
+			return
+		}
 		date := strconv.Itoa(update.Message.Date)
 		quote := format_quote(existing.Messages)
 		author := update.Message.From.FirstName // This would be better with a map of telegram users to irc nicks
@@ -233,6 +236,9 @@ func eval_addquote(update tgbotapi.Update) bool {
 
 func start_addquote(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	uid := update.Message.From.ID
+	if update.Message.ForwardDate > 0 {
+		return
+	}
 	if existing, exists := addquotePool[uid]; exists {
 		existing.Timer.Stop()
 		save_addquote(uid, update, bot)
