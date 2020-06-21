@@ -17,12 +17,22 @@ import (
 
 var conn *pgx.Conn
 var loc *time.Location
+var addquotePool map[int]Addquote
+var addquoteWait time.Duration
+
+type Addquote struct {
+	UserId   int
+	Messages []*tgbotapi.Message
+	Timer    *time.Timer
+}
 
 func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	var msg tgbotapi.MessageConfig
 	var reply string
 	split := strings.SplitN(update.Message.Text, " ", 3)
 	switch cmd := split[0][1:]; cmd {
+	case "addquote":
+		start_addquote(update, bot)
 	case "quote":
 		var err error
 		if len(split) == 1 { // rquote
@@ -114,8 +124,11 @@ func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 func main() {
 	var err error
+	addquotePool = make(map[int]Addquote)
 	token := os.Getenv("TELEGRAM_BOT_TOKEN")
 	dbDsn := os.Getenv("DIOSTEAMA_DB_URL")
+
+	addquoteWait = 800 * time.Millisecond
 	loc, err = time.LoadLocation("Europe/Berlin")
 	if err != nil {
 		log.Fatal(err)
@@ -153,11 +166,95 @@ func main() {
 	}
 }
 
-func eval_addquote(msg tgbotapi.Update) {
+func format_quote(msgs []*tgbotapi.Message) string {
+	result := ""
+	for i := range msgs {
+		result = result + format_quote_message(msgs[i])
+	}
+	return result
+}
+
+func format_quote_message(msg *tgbotapi.Message) string {
+	return fmt.Sprintf("%s: %s\n", msg.ForwardFrom.FirstName, msg.Text)
+}
+
+func save_addquote(uid int, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	if existing, exists := addquotePool[uid]; exists {
+		// save result
+
+		recnum := next_quote()
+		query := `
+	INSERT INTO linux_gey_db (recnum, date, author, quote, telegram_messages, telegram_author)
+	VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb)
+	`
+		date := strconv.Itoa(update.Message.Date)
+		quote := format_quote(existing.Messages)
+		author := update.Message.From.FirstName // This would be better with a map of telegram users to irc nicks
+		_, err := conn.Exec(context.Background(), query, recnum, date, author, quote, existing.Messages, update.Message.From)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		added := fmt.Sprintf("Quote added: %d", recnum)
+		log.Println(added)
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, added)
+		msg.ParseMode = "html"
+		bot.Send(msg)
+		delete(addquotePool, uid)
+		log.Printf("Saving quote %d for %d, %s, %s", recnum, uid, update.Message.From, update.Message.Date)
+	} else {
+		log.Printf("weird error condition, we were called without an existing pool")
+
+	}
+}
+func next_quote() int {
+	var recnum int
+	err := conn.QueryRow(context.Background(), "select max(recnum) from linux_gey_db").Scan(&recnum)
+	if err != nil {
+		return -1
+	}
+	recnum = recnum + 1
+	if recnum > 20000 {
+		return recnum
+	}
+	return 20000
+}
+func eval_addquote(update tgbotapi.Update) bool {
+	uid := update.Message.From.ID
+	if existing, exists := addquotePool[uid]; exists && update.Message.ForwardDate > 0 {
+		existing.Timer.Reset(addquoteWait)
+		existing.Messages = append(existing.Messages, update.Message)
+		addquotePool[uid] = existing
+		return true
+	}
+	return false
+}
+
+func start_addquote(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	uid := update.Message.From.ID
+	if existing, exists := addquotePool[uid]; exists {
+		existing.Timer.Stop()
+		save_addquote(uid, update, bot)
+		// Stop timer for previous addquote, save and start a new one
+	}
+	commit := func() {
+		log.Printf("Expired timer for %d, %s, %s", uid, update.Message.From, update.Message.Date)
+		save_addquote(uid, update, bot)
+	}
+	addquotePool[uid] = Addquote{
+		UserId: uid,
+		Timer:  time.AfterFunc(addquoteWait, commit),
+	}
+
 }
 
 func response(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	var msg tgbotapi.MessageConfig
+	if eval_addquote(update) {
+		// This is a forward part of an !addquote and has been processed. Return.
+		return
+	}
 	if len(update.Message.Text) > 0 && (string(update.Message.Text[0]) == "!" || string(update.Message.Text[0]) == "/") {
 		command(update, bot)
 	} else if strings.Contains(strings.ToLower(update.Message.Text), "almeida") {
