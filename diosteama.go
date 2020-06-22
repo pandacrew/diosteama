@@ -179,7 +179,15 @@ func format_quote(msgs []*tgbotapi.Message) string {
 }
 
 func format_quote_message(msg *tgbotapi.Message) string {
-	return fmt.Sprintf("%s: %s\n", msg.ForwardFrom.FirstName, msg.Text)
+	var name, text string
+	if msg.ReplyToMessage != nil {
+		name = msg.ReplyToMessage.From.FirstName
+		text = msg.ReplyToMessage.Text
+	} else {
+		name = msg.ForwardFrom.FirstName
+		text = msg.Text
+	}
+	return fmt.Sprintf("%s: %s\n", name, text)
 }
 
 func save_addquote(uid int, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
@@ -219,6 +227,7 @@ func save_addquote(uid int, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 	}
 }
+
 func next_quote() int {
 	var recnum int
 	err := pool.QueryRow(context.Background(), "select max(recnum) from linux_gey_db").Scan(&recnum)
@@ -231,6 +240,7 @@ func next_quote() int {
 	}
 	return 20000
 }
+
 func eval_addquote(update tgbotapi.Update) bool {
 	uid := update.Message.From.ID
 	if existing, exists := addquotePool[uid]; exists && update.Message.ForwardDate > 0 {
@@ -251,6 +261,15 @@ func start_addquote(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		// Stop timer for previous addquote, save and start a new one
 		existing.Timer.Stop()
 		save_addquote(uid, update, bot)
+	}
+	if update.Message.ReplyToMessage != nil {
+		addquote := Addquote{
+			UserId: uid,
+		}
+		addquote.Messages = append(addquotePool[uid].Messages, update.Message)
+		addquotePool[uid] = addquote
+		save_addquote(uid, update, bot)
+		return
 	}
 	commit := func() {
 		log.Printf("Expired timer for %d, %s, %s", uid, update.Message.From, update.Message.Date)
