@@ -118,8 +118,11 @@ func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 		bot.Send(msg)
+	case "w00g":
+		reply = "Capitan castor, ayuditaaaaaaaaaaaaaaaa!!!"
+		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+		bot.Send(msg)
 	}
-
 }
 
 func main() {
@@ -272,6 +275,10 @@ func response(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		reply := "¡¡CARAPOLLA!!"
 		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 		bot.Send(msg)
+	} else if strings.Contains(strings.ToLower(update.Message.Text), "ayudita") {
+		reply := "Capitan castor, ayuditaaaaaaaaaaaaaaaa!!!"
+		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+		bot.Send(msg)
 	} else if strings.Contains(strings.ToLower(update.Message.Text), "carme") {
 		reply := "PUTAAAAAAAAAA"
 		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
@@ -282,6 +289,7 @@ func response(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		bot.Send(msg)
 	}
 }
+
 func info(i int) (string, error) {
 	var (
 		recnum              int
