@@ -26,6 +26,51 @@ type Addquote struct {
 	Timer    *time.Timer
 }
 
+func main() {
+	var err error
+	addquotePool = make(map[int]Addquote)
+	token := os.Getenv("TELEGRAM_BOT_TOKEN")
+	dbDsn := os.Getenv("DIOSTEAMA_DB_URL")
+
+	addquoteWait = 800 * time.Millisecond
+	loc, err = time.LoadLocation("Europe/Berlin")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pool, err = pgxpool.Connect(context.Background(), dbDsn)
+	if err != nil {
+		log.Panic("Can't create pool", err)
+	}
+
+	info(0)
+	bot, err := tgbotapi.NewBotAPI(token)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	bot.Debug = false
+
+	log.Printf("Authorized on account %s", bot.Self.UserName)
+
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = 60
+
+	updates, err := bot.GetUpdatesChan(u)
+
+	for update := range updates {
+		j, _ := json.Marshal(update)
+		log.Printf("%s", j)
+		if update.Message == nil { // ignore any non-Message Updates
+			continue
+		}
+
+		response(update, bot)
+		log.Printf("[%s] %s (%v)", update.Message.From.UserName, update.Message.Text, update.Message.IsCommand())
+
+	}
+}
+
 func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	var msg tgbotapi.MessageConfig
 	var reply string
@@ -122,51 +167,6 @@ func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		reply = "Capitan castor, ayuditaaaaaaaaaaaaaaaa!!!"
 		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 		bot.Send(msg)
-	}
-}
-
-func main() {
-	var err error
-	addquotePool = make(map[int]Addquote)
-	token := os.Getenv("TELEGRAM_BOT_TOKEN")
-	dbDsn := os.Getenv("DIOSTEAMA_DB_URL")
-
-	addquoteWait = 800 * time.Millisecond
-	loc, err = time.LoadLocation("Europe/Berlin")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	pool, err = pgxpool.Connect(context.Background(), dbDsn)
-	if err != nil {
-		log.Panic("Can't create pool", err)
-	}
-
-	info(0)
-	bot, err := tgbotapi.NewBotAPI(token)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	bot.Debug = false
-
-	log.Printf("Authorized on account %s", bot.Self.UserName)
-
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-
-	updates, err := bot.GetUpdatesChan(u)
-
-	for update := range updates {
-		j, _ := json.Marshal(update)
-		log.Printf("%s", j)
-		if update.Message == nil { // ignore any non-Message Updates
-			continue
-		}
-
-		response(update, bot)
-		log.Printf("[%s] %s (%v)", update.Message.From.UserName, update.Message.Text, update.Message.IsCommand())
-
 	}
 }
 
