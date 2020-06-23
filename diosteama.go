@@ -74,8 +74,11 @@ func main() {
 func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	var msg tgbotapi.MessageConfig
 	var reply string
+	// Split command into parts
 	split := strings.SplitN(update.Message.Text, " ", 3)
-	switch cmd := split[0][1:]; cmd {
+	// Get command name removing the @bot part
+	cmd := strings.Split(split[0][1:], "@")[0]
+	switch cmd {
 	case "addquote":
 		start_addquote(update, bot)
 	case "quote":
