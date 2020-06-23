@@ -11,6 +11,7 @@ import (
 
 	"context"
 	"encoding/json"
+
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -74,12 +75,13 @@ func main() {
 func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	var msg tgbotapi.MessageConfig
 	var reply string
+	var err error
+	var offset int
 	split := strings.SplitN(update.Message.Text, " ", 3)
 	switch cmd := split[0][1:]; cmd {
 	case "addquote":
 		start_addquote(update, bot)
 	case "quote":
-		var err error
 		if len(split) == 1 { // rquote
 			reply, err = info(-1)
 			if err != nil {
@@ -91,7 +93,7 @@ func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 				log.Println("Error reading quote: ", err)
 			}
 		} else {
-			offset, err := strconv.Atoi(split[1])
+			offset, err = strconv.Atoi(split[1])
 			if err != nil || offset < 0 {
 				reply = "Error. Format is <code>!quote [[offset] search]</code>"
 			} else {
@@ -123,16 +125,20 @@ func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		msg.ParseMode = "html"
 		bot.Send(msg)
 	case "rquote":
-		reply, err := info(-1)
+		if len(split) == 1 {
+			reply, err = info(-1)
+		} else if len(split) == 2 {
+			reply, err = info(-1, split[1])
+		}
 		if err != nil {
 			log.Println("Error reading quote: ", err)
-
 		}
 		msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 		msg.ParseMode = "html"
 		bot.Send(msg)
 	case "top":
 		var i int
+		var r string
 		if len(split) == 2 {
 			var err error
 			i, err = strconv.Atoi(split[1])
@@ -142,7 +148,7 @@ func command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		} else {
 			i = 10
 		}
-		r, err := top(i)
+		r, err = top(i)
 		if err != nil {
 			log.Println("Error reading top", err)
 		}
@@ -309,7 +315,7 @@ func response(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 }
 
-func info(i int) (string, error) {
+func info(i int, text ...string) (string, error) {
 	var (
 		recnum              int
 		date, author, quote string
@@ -317,13 +323,18 @@ func info(i int) (string, error) {
 	)
 
 	query := "SELECT recnum, quote, author, date FROM linux_gey_db"
+	where := ""
+	if len(text) > 0 {
+		where = fmt.Sprintf("WHERE LOWER(quote) LIKE LOWER('%%%s%%')", text[0])
+	}
+
 	if i < 1 {
 		log.Println("Random quote")
 		f = "ORDER BY random() LIMIT 1"
 	} else {
 		f = fmt.Sprintf("WHERE recnum = %d", i)
 	}
-	err := pool.QueryRow(context.Background(), fmt.Sprintf("%s %s", query, f)).Scan(&recnum, &quote, &author, &date)
+	err := pool.QueryRow(context.Background(), fmt.Sprintf("%s %s %s", query, where, f)).Scan(&recnum, &quote, &author, &date)
 
 	if err != nil {
 		log.Printf("Error consultando DB: %s", err)
