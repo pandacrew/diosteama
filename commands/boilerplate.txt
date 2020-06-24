@@ -1,0 +1,24 @@
+// package commands
+
+// import (
+// 	"fmt"
+// 	"html"
+// 	"log"
+// 	"os"
+// 	"strconv"
+// 	"strings"
+// 	"time"
+
+// 	"context"
+// 	"encoding/json"
+
+// 	"github.com/go-telegram-bot-api/telegram-bot-api"
+// 	"github.com/jackc/pgx/v4/pgxpool"
+// )
+
+// func cmdSomething(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
+// 	var msg tgbotapi.MessageConfig
+// 	var reply string
+// 	var err error
+// 	var offset int
+// }
