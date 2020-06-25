@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/pandacrew-net/diosteama/database"
+	"github.com/pandacrew-net/diosteama/quotes"
 )
 
 func parseTime(t string) time.Time {
@@ -26,7 +26,7 @@ func parseTime(t string) time.Time {
 	return tm
 }
 
-func FormatQuote(quote database.Quote) string {
+func FormatQuote(quote quotes.Quote) string {
 	var nick string
 	var formatted string
 

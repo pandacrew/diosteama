@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pandacrew-net/diosteama/database"
 	"github.com/pandacrew-net/diosteama/format"
+	"github.com/pandacrew-net/diosteama/quotes"
 )
 
 var pool *pgxpool.Pool
@@ -56,7 +57,7 @@ func cmdAddquote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 func saveAddquote(uid int, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	if existing, exists := addquotePool[uid]; exists {
 
-		var quote database.Quote
+		var quote quotes.Quote
 		var err error
 		var added string
 		var msg tgbotapi.MessageConfig

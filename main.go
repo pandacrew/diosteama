@@ -12,6 +12,16 @@ import (
 	"github.com/pandacrew-net/diosteama/database"
 )
 
+// Quote is the full quote
+type Quote struct {
+	Recnum   int
+	Date     string
+	Author   string
+	Text     string
+	Messages []*tgbotapi.Message
+	From     tgbotapi.User
+}
+
 func main() {
 	var err error
 	token := os.Getenv("TELEGRAM_BOT_TOKEN")

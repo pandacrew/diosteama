@@ -8,18 +8,9 @@ import (
 
 	"context"
 
-	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/pandacrew-net/diosteama/format"
+	"github.com/pandacrew-net/diosteama/quotes"
 )
-
-// Quote is the full quote
-type Quote struct {
-	Recnum   int
-	Date     string
-	Author   string
-	Text     string
-	Messages []*tgbotapi.Message
-	From     tgbotapi.User
-}
 
 func nextQuote() int {
 	var recnum int
@@ -35,7 +26,7 @@ func nextQuote() int {
 }
 
 // InsertQuote adds a new quote record to the database
-func InsertQuote(quote Quote) (Quote, error) {
+func InsertQuote(quote quotes.Quote) (quotes.Quote, error) {
 	var err error
 
 	if quote.Recnum == 0 {
@@ -54,7 +45,7 @@ func InsertQuote(quote Quote) (Quote, error) {
 
 // Info returns all info for a quote
 func Info(recnum int, text ...string) (string, error) {
-	var quote Quote
+	var quote quotes.Quote
 	var query string
 	var where string
 	var order string
@@ -81,6 +72,7 @@ func Info(recnum int, text ...string) (string, error) {
 	}
 	log.Println(quote.Recnum, quote.Text, quote.Author, quote.Date)
 
+	parsedQuote = format.FormatQuote(quote)
 	return parsedQuote, nil
 }
 
