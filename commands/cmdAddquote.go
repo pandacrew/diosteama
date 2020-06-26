@@ -24,7 +24,7 @@ type addquote struct {
 }
 
 func cmdAddquote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
-
+	addquotePool = make(map[int]addquote)
 	uid := update.Message.From.ID
 	if update.Message.ForwardDate > 0 {
 		return
