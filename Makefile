@@ -1,6 +1,7 @@
 project=diosteama
 remote=fary.pandacrew.net
 source=${project}.go
+include .envrc
 
 all: build
 
