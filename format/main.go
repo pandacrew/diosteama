@@ -26,7 +26,8 @@ func parseTime(t string) time.Time {
 	return tm
 }
 
-func FormatQuote(quote quotes.Quote) string {
+// Quote formats a quote to be delivered to the chat
+func Quote(quote quotes.Quote) string {
 	var nick string
 	var formatted string
 
@@ -37,15 +38,17 @@ func FormatQuote(quote quotes.Quote) string {
 	return formatted
 }
 
-func FormatRawQuote(msgs []*tgbotapi.Message) string {
+// RawQuote creates a string out from a list of raw quotes
+func RawQuote(msgs []*tgbotapi.Message) string {
 	var result string
 	for i := range msgs {
-		result = result + FormatRawQuoteMessage(msgs[i])
+		result = result + RawQuoteMessage(msgs[i])
 	}
 	return result
 }
 
-func FormatRawQuoteMessage(msg *tgbotapi.Message) string {
+// RawQuoteMessage creates author: text from a raw message
+func RawQuoteMessage(msg *tgbotapi.Message) string {
 	var name, text string
 	if msg.ReplyToMessage != nil {
 		name = msg.ReplyToMessage.From.FirstName

@@ -72,7 +72,7 @@ func Info(recnum int, text ...string) (string, error) {
 	}
 	log.Println(quote.Recnum, quote.Text, quote.Author, quote.Date)
 
-	parsedQuote = format.FormatQuote(quote)
+	parsedQuote = format.Quote(quote)
 	return parsedQuote, nil
 }
 
