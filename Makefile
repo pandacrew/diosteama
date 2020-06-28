@@ -1,11 +1,12 @@
 project=diosteama
 remote=fary.pandacrew.net
 source=${project}.go
+GOFILES=$(wildcard *.go */*.go)
 include .envrc
 
 all: build
 
-${project}:
+${project}: ${GOFILES}
 	CGO_ENABLED=0 go build .
 
 sync: build ## Deploy to remote server
