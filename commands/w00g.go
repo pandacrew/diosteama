@@ -4,7 +4,7 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-func cmdW00g(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
+func w00g(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	var msg tgbotapi.MessageConfig
 	var reply string
 

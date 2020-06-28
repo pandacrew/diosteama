@@ -6,7 +6,7 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-func cmdChuches(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
+func chuches(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	var msg tgbotapi.MessageConfig
 	var reply string
 

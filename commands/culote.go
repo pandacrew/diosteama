@@ -7,7 +7,7 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-func cmdCulote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
+func culote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	var msg tgbotapi.MessageConfig
 	var reply string
 	var text string

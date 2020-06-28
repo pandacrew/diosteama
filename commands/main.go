@@ -14,20 +14,20 @@ func Command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 	switch cmd {
 	case "addquote":
-		cmdAddquote(update, bot, argv)
+		addquoteStart(update, bot, argv)
 	case "quote":
-		cmdQuote(update, bot, argv)
+		quote(update, bot, argv)
 	case "info":
-		cmdInfo(update, bot, argv)
+		info(update, bot, argv)
 	case "rquote":
-		cmdRquote(update, bot, argv)
+		rquote(update, bot, argv)
 	case "top":
-		cmdTop(update, bot, argv)
+		top(update, bot, argv)
 	case "culote":
-		cmdCulote(update, bot, argv)
+		culote(update, bot, argv)
 	case "chuches":
-		cmdChuches(update, bot, argv)
+		chuches(update, bot, argv)
 	case "w00g":
-		cmdW00g(update, bot, argv)
+		w00g(update, bot, argv)
 	}
 }

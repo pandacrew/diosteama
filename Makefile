@@ -6,7 +6,7 @@ include .envrc
 all: build
 
 ${project}:
-	go build .
+	CGO_ENABLED=0 go build .
 
 sync: build ## Deploy to remote server
 	scp ${project} ${remote}:

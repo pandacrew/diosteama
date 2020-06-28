@@ -9,7 +9,7 @@ import (
 	"github.com/pandacrew-net/diosteama/database"
 )
 
-func cmdTop(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
+func top(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	var msg tgbotapi.MessageConfig
 	var reply string
 	var err error

@@ -19,7 +19,7 @@ func Triggers(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	}
 
 	if strings.Contains(strings.ToLower(update.Message.Text), "ayudita") {
-		cmdW00g(update, bot, nil)
+		w00g(update, bot, nil)
 		return
 	}
 

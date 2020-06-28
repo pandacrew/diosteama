@@ -14,17 +14,17 @@ import (
 )
 
 var pool *pgxpool.Pool
-var addquotePool map[int]addquote
+var addquotePool map[int]Addquote
 var addquoteWait time.Duration
 
-type addquote struct {
+type Addquote struct {
 	UserID   int
 	Messages []*tgbotapi.Message
 	Timer    *time.Timer
 }
 
-func cmdAddquote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
-	addquotePool = make(map[int]addquote)
+func addquoteStart(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
+	addquotePool = make(map[int]Addquote)
 	uid := update.Message.From.ID
 	if update.Message.ForwardDate > 0 {
 		return
@@ -35,7 +35,7 @@ func cmdAddquote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 		saveAddquote(uid, update, bot)
 	}
 	if update.Message.ReplyToMessage != nil {
-		addquote := addquote{
+		addquote := Addquote{
 			UserID: uid,
 		}
 		addquote.Messages = append(addquotePool[uid].Messages, update.Message)
@@ -47,7 +47,7 @@ func cmdAddquote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 		log.Printf("Expired timer for %d, %s, %s", uid, update.Message.From, update.Message.Date)
 		saveAddquote(uid, update, bot)
 	}
-	addquotePool[uid] = addquote{
+	addquotePool[uid] = Addquote{
 		UserID: uid,
 		Timer:  time.AfterFunc(addquoteWait, commit),
 	}
@@ -104,4 +104,81 @@ func EvalAddquote(update tgbotapi.Update) bool {
 		return true
 	}
 	return false
+}
+
+func quote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
+	var msg tgbotapi.MessageConfig
+	var reply string
+	var err error
+	var offset int
+	if len(argv) == 1 { // rquote
+		reply, err = database.Info(-1)
+		if err != nil {
+			log.Println("Error reading quote: ", err)
+		}
+	} else if len(argv) == 2 {
+		reply, err = database.GetQuote(argv[1], 0)
+		if err != nil {
+			log.Println("Error reading quote: ", err)
+		}
+	} else {
+		offset, err = strconv.Atoi(argv[1])
+		if err != nil || offset < 0 {
+			reply = "Error. Format is <code>!quote [[offset] search]</code>"
+		} else {
+			reply, err = database.GetQuote(argv[2], offset)
+			if err != nil {
+				log.Println("Error reading quote: ", err)
+			}
+		}
+	}
+	log.Println("Replying", reply)
+	msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+	msg.ParseMode = "html"
+	bot.Send(msg)
+}
+
+func rquote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
+	var msg tgbotapi.MessageConfig
+	var reply string
+	var err error
+
+	if len(argv) == 1 {
+		reply, err = database.Info(-1)
+	} else if len(argv) == 2 {
+		reply, err = database.Info(-1, argv[1])
+	}
+	if err != nil {
+		log.Println("Error reading quote: ", err)
+	}
+	msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+	msg.ParseMode = "html"
+	bot.Send(msg)
+}
+
+func info(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
+	var msg tgbotapi.MessageConfig
+	var reply string
+	var quote string
+	var err error
+
+	if len(argv) < 2 {
+		reply = "Error. Format is !info <quote id>"
+	}
+
+	qid, err := strconv.Atoi(argv[1])
+	if err != nil {
+		reply = "Error. Format is !info <quote id>"
+	}
+
+	quote, err = database.Info(qid)
+	if err != nil {
+		log.Println("Error reading quote: ", err)
+	} else {
+		reply = quote
+	}
+
+	msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+	msg.ParseMode = "html"
+	bot.Send(msg)
 }
