@@ -2,3 +2,5 @@
 **/*.rs.bk
 .envrc
 diosteama
+*.swp
+*.env
