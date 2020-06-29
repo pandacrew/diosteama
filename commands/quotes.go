@@ -15,7 +15,7 @@ import (
 
 var pool *pgxpool.Pool
 var addquotePool map[int]Addquote
-var addquoteWait time.Duration
+var addquoteWait = 800 * time.Millisecond
 
 type Addquote struct {
 	UserID   int

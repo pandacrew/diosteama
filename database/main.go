@@ -11,7 +11,6 @@ import (
 )
 
 var pool *pgxpool.Pool
-var addquoteWait time.Duration
 var loc *time.Location
 
 // Init initializes the connection to the database
@@ -19,7 +18,6 @@ func Init() {
 	var err error
 	dbDsn := os.Getenv("DIOSTEAMA_DB_URL")
 
-	addquoteWait = 800 * time.Millisecond
 	loc, err = time.LoadLocation("Europe/Berlin")
 	if err != nil {
 		log.Fatal(err)
