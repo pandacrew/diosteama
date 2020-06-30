@@ -10,12 +10,10 @@ import (
 )
 
 func top(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
-	var msg tgbotapi.MessageConfig
-	var reply string
-	var err error
-
 	var i int
 	var r string
+	var err error
+
 	if len(argv) == 2 {
 		var err error
 		i, err = strconv.Atoi(argv[1])
@@ -29,8 +27,8 @@ func top(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	if err != nil {
 		log.Println("Error reading top", err)
 	}
-	reply = strings.Join([]string{"<pre>", r, "</pre>"}, "")
-	msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+	reply := strings.Join([]string{"<pre>", r, "</pre>"}, "")
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 	msg.ParseMode = "html"
 	bot.Send(msg)
 }

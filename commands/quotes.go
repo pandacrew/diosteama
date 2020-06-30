@@ -107,10 +107,9 @@ func EvalAddquote(update tgbotapi.Update) bool {
 }
 
 func quote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
-	var msg tgbotapi.MessageConfig
 	var reply string
 	var err error
-	var offset int
+
 	if len(argv) == 1 { // rquote
 		reply, err = database.Info(-1)
 		if err != nil {
@@ -122,7 +121,7 @@ func quote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 			log.Println("Error reading quote: ", err)
 		}
 	} else {
-		offset, err = strconv.Atoi(argv[1])
+		offset, err := strconv.Atoi(argv[1])
 		if err != nil || offset < 0 {
 			reply = "Error. Format is <code>!quote [[offset] search]</code>"
 		} else {
@@ -133,13 +132,12 @@ func quote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 		}
 	}
 	log.Println("Replying", reply)
-	msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 	msg.ParseMode = "html"
 	bot.Send(msg)
 }
 
 func rquote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
-	var msg tgbotapi.MessageConfig
 	var reply string
 	var err error
 
@@ -151,16 +149,13 @@ func rquote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	if err != nil {
 		log.Println("Error reading quote: ", err)
 	}
-	msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 	msg.ParseMode = "html"
 	bot.Send(msg)
 }
 
 func info(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
-	var msg tgbotapi.MessageConfig
 	var reply string
-	var quote string
-	var err error
 
 	if len(argv) < 2 {
 		reply = "Error. Format is !info <quote id>"
@@ -171,14 +166,14 @@ func info(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 		reply = "Error. Format is !info <quote id>"
 	}
 
-	quote, err = database.Info(qid)
+	quote, err := database.Info(qid)
 	if err != nil {
 		log.Println("Error reading quote: ", err)
 	} else {
 		reply = quote
 	}
 
-	msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 	msg.ParseMode = "html"
 	bot.Send(msg)
 }

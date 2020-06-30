@@ -27,8 +27,6 @@ func nextQuote() int {
 
 // InsertQuote adds a new quote record to the database
 func InsertQuote(quote quotes.Quote) (quotes.Quote, error) {
-	var err error
-
 	if quote.Recnum == 0 {
 		quote.Recnum = nextQuote()
 	}
@@ -37,7 +35,7 @@ func InsertQuote(quote quotes.Quote) (quotes.Quote, error) {
 	INSERT INTO linux_gey_db (recnum, date, author, quote, telegram_messages, telegram_author)
 	VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb)
 	`
-	_, err = pool.Exec(context.Background(), query,
+	_, err := pool.Exec(context.Background(), query,
 		quote.Recnum, quote.Date, quote.Author, quote.Text, quote.Messages, quote.From)
 
 	return quote, err
@@ -46,13 +44,10 @@ func InsertQuote(quote quotes.Quote) (quotes.Quote, error) {
 // Info returns all info for a quote
 func Info(recnum int, text ...string) (string, error) {
 	var quote quotes.Quote
-	var query string
-	var where string
 	var order string
-	var parsedQuote string
 
-	query = "SELECT recnum, quote, author, date FROM linux_gey_db"
-	where = ""
+	query := "SELECT recnum, quote, author, date FROM linux_gey_db"
+	where := ""
 	if len(text) > 0 {
 		where = fmt.Sprintf("WHERE LOWER(quote) LIKE LOWER('%%%s%%')", text[0])
 	}
@@ -72,21 +67,20 @@ func Info(recnum int, text ...string) (string, error) {
 	}
 	log.Println(quote.Recnum, quote.Text, quote.Author, quote.Date)
 
-	parsedQuote = format.Quote(quote)
+	parsedQuote := format.Quote(quote)
 	return parsedQuote, nil
 }
 
 // GetQuote performs a quote search
 func GetQuote(q string, offset int) (string, error) {
 	var b strings.Builder
-	var err error
 	var count int
 
 	pq := strings.Replace(q, "*", "%", -1)
 	query := fmt.Sprintf(`
 	SELECT count(*)
 	FROM linux_gey_db WHERE LOWER(quote) LIKE LOWER('%%%s%%');`, pq)
-	err = pool.QueryRow(context.Background(), query).Scan(&count)
+	err := pool.QueryRow(context.Background(), query).Scan(&count)
 	if err != nil || count < 1 {
 		return fmt.Sprintf("Por %s no me sale nada", q), nil
 	}
@@ -129,7 +123,6 @@ func GetQuote(q string, offset int) (string, error) {
 // Top performs some unknown stuff (muahaha)
 func Top(i int) (string, error) {
 	var b strings.Builder
-	var err error
 	if i < 0 {
 		i = 10
 	}
