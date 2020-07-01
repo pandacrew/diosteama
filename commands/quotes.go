@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-telegram-bot-api/telegram-bot-api"
@@ -115,20 +116,16 @@ func quote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 		if err != nil {
 			log.Println("Error reading quote: ", err)
 		}
-	} else if len(argv) == 2 {
-		reply, err = database.GetQuote(argv[1], 0)
-		if err != nil {
-			log.Println("Error reading quote: ", err)
-		}
 	} else {
 		offset, err := strconv.Atoi(argv[1])
 		if err != nil || offset < 0 {
-			reply = "Error. Format is <code>!quote [[offset] search]</code>"
+			text := strings.Join(argv[1:], " ")
+			reply, err = database.GetQuote(text, 0)
 		} else {
 			reply, err = database.GetQuote(argv[2], offset)
-			if err != nil {
-				log.Println("Error reading quote: ", err)
-			}
+		}
+		if err != nil {
+			log.Println("Error reading quote: ", err)
 		}
 	}
 	log.Println("Replying", reply)
