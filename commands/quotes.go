@@ -118,7 +118,7 @@ func quote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 		}
 	} else {
 		offset, err := strconv.Atoi(argv[1])
-		if err != nil || offset < 0 {
+		if err != nil || len(argv) == 2 || offset < 0 {
 			text := strings.Join(argv[1:], " ")
 			reply, err = database.GetQuote(text, 0)
 		} else {
