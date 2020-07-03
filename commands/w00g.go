@@ -5,10 +5,7 @@ import (
 )
 
 func w00g(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
-	var msg tgbotapi.MessageConfig
-	var reply string
-
-	reply = "Capitan castor, ayuditaaaaaaaaaaaaaaaa!!!"
-	msg = tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+	reply := "Capitan castor, ayuditaaaaaaaaaaaaaaaa!!!"
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 	bot.Send(msg)
 }

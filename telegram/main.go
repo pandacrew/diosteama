@@ -12,7 +12,6 @@ import (
 
 // Start initialized the bot and runs main loop
 func Start() {
-	var err error
 	token := os.Getenv("TELEGRAM_BOT_TOKEN")
 
 	bot, err := tgbotapi.NewBotAPI(token)

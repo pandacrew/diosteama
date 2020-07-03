@@ -12,9 +12,7 @@ import (
 )
 
 func parseTime(t string) time.Time {
-	var loc *time.Location
-	var err error
-	loc, err = time.LoadLocation("Europe/Berlin")
+	loc, err := time.LoadLocation("Europe/Berlin")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -28,12 +26,9 @@ func parseTime(t string) time.Time {
 
 // Quote formats a quote to be delivered to the chat
 func Quote(quote quotes.Quote) string {
-	var nick string
-	var formatted string
-
-	nick = strings.SplitN(quote.Author, "!", 2)[0]
+	nick := strings.SplitN(quote.Author, "!", 2)[0]
 	//💩🔞🔪💥
-	formatted = fmt.Sprintf("<pre>%s</pre>\n\n<em>🚽 Quote %d by %s on %s</em>",
+	formatted := fmt.Sprintf("<pre>%s</pre>\n\n<em>🚽 Quote %d by %s on %s</em>",
 		html.EscapeString(quote.Text), quote.Recnum, html.EscapeString(nick), parseTime(quote.Date))
 	return formatted
 }

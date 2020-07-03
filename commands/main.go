@@ -8,7 +8,6 @@ import (
 
 // Command executes a bot command
 func Command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-
 	argv := strings.SplitN(update.Message.Text, " ", 3)
 	cmd := argv[0][1:]
 
