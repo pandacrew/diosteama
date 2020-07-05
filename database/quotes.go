@@ -126,8 +126,8 @@ func Top(i int) (string, error) {
 	if i < 0 {
 		i = 10
 	}
-	rows, err := pool.Query(context.Background(),
-		"select count(*) as c, substring_index(author, '!', 1) as a from linux_gey_db group by a order by c desc limit ?;", i)
+	query := "select count(*) as c, split_part(author, '!', 1) as a from linux_gey_db group by a order by c desc limit $1;"
+	rows, err := pool.Query(context.Background(), query, i)
 	if err != nil {
 		log.Printf("Error listing top %d. Fuck you.", i)
 		return b.String(), err
