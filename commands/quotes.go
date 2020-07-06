@@ -71,7 +71,7 @@ func saveAddquote(uid int, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		quote.Text = format.RawQuote(existing.Messages)
 		quote.Author = update.Message.From.FirstName // This would be better with a map of telegram users to irc nicks
 		quote.Messages = existing.Messages
-		quote.From = *update.Message.From
+		quote.From = update.Message.From
 
 		quote, err = database.InsertQuote(quote)
 
