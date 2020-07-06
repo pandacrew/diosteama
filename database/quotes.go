@@ -8,7 +8,6 @@ import (
 
 	"context"
 
-	"github.com/pandacrew-net/diosteama/format"
 	"github.com/pandacrew-net/diosteama/quotes"
 )
 
@@ -42,7 +41,7 @@ func InsertQuote(quote quotes.Quote) (quotes.Quote, error) {
 }
 
 // Info returns all info for a quote
-func Info(recnum int, text ...string) (string, error) {
+func Info(recnum int, text ...string) (*quotes.Quote, error) {
 	var quote quotes.Quote
 	var order string
 
@@ -63,12 +62,11 @@ func Info(recnum int, text ...string) (string, error) {
 
 	if err != nil {
 		log.Printf("Error consultando DB: %s", err)
-		return "Quote no encontrado", nil
+		return nil, fmt.Errorf("%w", err)
 	}
 	log.Println(quote.Recnum, quote.Text, quote.Author, quote.Date)
 
-	parsedQuote := format.Quote(quote)
-	return parsedQuote, nil
+	return &quote, nil
 }
 
 // GetQuote performs a quote search

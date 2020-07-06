@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pandacrew-net/diosteama/database"
 	"github.com/pandacrew-net/diosteama/format"
@@ -112,9 +112,12 @@ func quote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	var err error
 
 	if len(argv) == 1 { // rquote
-		reply, err = database.Info(-1)
+		var quote *quotes.Quote
+		quote, err = database.Info(-1)
 		if err != nil {
 			log.Println("Error reading quote: ", err)
+		} else {
+			reply = format.Quote(*quote)
 		}
 	} else {
 		offset, err := strconv.Atoi(argv[1])
@@ -135,17 +138,19 @@ func quote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 }
 
 func rquote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
+	var quote *quotes.Quote
 	var reply string
 	var err error
 
 	if len(argv) == 1 {
-		reply, err = database.Info(-1)
+		quote, err = database.Info(-1)
 	} else if len(argv) == 2 {
-		reply, err = database.Info(-1, argv[1])
+		quote, err = database.Info(-1, argv[1])
 	}
 	if err != nil {
 		log.Println("Error reading quote: ", err)
 	}
+	reply = format.Quote(*quote)
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 	msg.ParseMode = "html"
 	bot.Send(msg)
@@ -167,7 +172,7 @@ func info(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	if err != nil {
 		log.Println("Error reading quote: ", err)
 	} else {
-		reply = quote
+		reply = format.Quote(*quote)
 	}
 
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
