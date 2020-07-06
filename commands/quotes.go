@@ -111,18 +111,18 @@ func quote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	var reply string
 	var err error
 
-	if len(argv) == 1 { // rquote
+	if len(argv) == 0 { // rquote
 		reply, err = database.Info(-1)
 		if err != nil {
 			log.Println("Error reading quote: ", err)
 		}
 	} else {
-		offset, err := strconv.Atoi(argv[1])
-		if err != nil || len(argv) == 2 || offset < 0 {
-			text := strings.Join(argv[1:], " ")
+		offset, err := strconv.Atoi(argv[0])
+		if err != nil || len(argv) == 1 || offset < 0 {
+			text := strings.Join(argv, " ")
 			reply, err = database.GetQuote(text, 0)
 		} else {
-			reply, err = database.GetQuote(argv[2], offset)
+			reply, err = database.GetQuote(argv[1], offset)
 		}
 		if err != nil {
 			log.Println("Error reading quote: ", err)
@@ -138,10 +138,10 @@ func rquote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	var reply string
 	var err error
 
-	if len(argv) == 1 {
+	if len(argv) == 0 {
 		reply, err = database.Info(-1)
-	} else if len(argv) == 2 {
-		reply, err = database.Info(-1, argv[1])
+	} else if len(argv) == 1 {
+		reply, err = database.Info(-1, argv[0])
 	}
 	if err != nil {
 		log.Println("Error reading quote: ", err)
@@ -154,11 +154,11 @@ func rquote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 func info(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	var reply string
 
-	if len(argv) < 2 {
+	if len(argv) < 1 {
 		reply = "Error. Format is !info <quote id>"
 	}
 
-	qid, err := strconv.Atoi(argv[1])
+	qid, err := strconv.Atoi(argv[0])
 	if err != nil {
 		reply = "Error. Format is !info <quote id>"
 	}

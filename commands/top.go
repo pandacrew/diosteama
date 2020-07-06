@@ -12,8 +12,8 @@ import (
 func top(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	i := 10
 
-	if len(argv) == 2 {
-		if j, err := strconv.Atoi(argv[1]); err == nil {
+	if len(argv) == 1 {
+		if j, err := strconv.Atoi(argv[0]); err == nil {
 			i = j
 		}
 	}
