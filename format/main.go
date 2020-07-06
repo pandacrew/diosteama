@@ -8,7 +8,6 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/pandacrew-net/diosteama/database"
 	"github.com/pandacrew-net/diosteama/quotes"
 )
 
@@ -55,10 +54,16 @@ func RawQuoteMessage(msg *tgbotapi.Message) string {
 		text = msg.Text
 	}
 
-	name, err := database.NickFromTGUser(user)
-	if err != nil {
-		name = user.String()
-	}
+	// Reverted to old behaviour
+	name = user.FirstName
+
+	/*
+		// Uncomment this to use the IRC nick on stored quotes
+		name, err := database.NickFromTGUser(user)
+		if err != nil {
+			name = user.String()
+		}
+	*/
 
 	return fmt.Sprintf("%s: %s\n", name, text)
 }
