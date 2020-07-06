@@ -6,6 +6,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/pandacrew-net/diosteama/database"
+	"github.com/pandacrew-net/diosteama/format"
 )
 
 func soy(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
@@ -68,7 +69,7 @@ func es(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 					reply = fmt.Sprintf("Algo no fue bien: %s", err)
 				}
 			} else {
-				reply = fmt.Sprintf("Vale, a partir de ahora eres <code>%s</code>", argv[1])
+				reply = fmt.Sprintf("Vale, a partir de ahora <code>%s</code> es <code>%s</code>", format.PrettyUser(user), argv[1])
 			}
 		}
 	}

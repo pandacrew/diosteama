@@ -13,6 +13,19 @@ import (
 	"github.com/pandacrew-net/diosteama/quotes"
 )
 
+func PrettyUser(user *tgbotapi.User) string {
+	if user.FirstName != "" {
+		var str strings.Builder
+		str.WriteString(user.FirstName)
+		if user.LastName != "" {
+			str.WriteString(" ")
+			str.WriteString(user.LastName)
+		}
+		return str.String()
+	}
+	return fmt.Sprintf("@%s", user.UserName)
+}
+
 func parseTime(t string) time.Time {
 	loc, err := time.LoadLocation("Europe/Berlin")
 	if err != nil {
@@ -36,7 +49,7 @@ func Quote(quote quotes.Quote) string {
 	} else {
 		nick, err = database.NickFromTGUser(quote.From)
 		if err != nil {
-			nick = prettyTGUser(quote.From)
+			nick = PrettyUser(quote.From)
 		}
 	}
 	//💩🔞🔪💥
@@ -76,23 +89,10 @@ func formatTGMessage(msg *tgbotapi.Message) string {
 	// Uncomment this to use the IRC nick on stored quotes
 	name, err := database.NickFromTGUser(user)
 	if err != nil {
-		name = prettyTGUser(user)
+		name = PrettyUser(user)
 	}
 
 	return fmt.Sprintf("%s: %s\n", name, text)
-}
-
-func prettyTGUser(user *tgbotapi.User) string {
-	if user.FirstName != "" {
-		var str strings.Builder
-		str.WriteString(user.FirstName)
-		if user.LastName != "" {
-			str.WriteString(" ")
-			str.WriteString(user.LastName)
-		}
-		return str.String()
-	}
-	return fmt.Sprintf("@%s", user.UserName)
 }
 
 // RawQuote creates a string out from a list of raw quotes
