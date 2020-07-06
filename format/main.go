@@ -57,7 +57,7 @@ func RawQuoteMessage(msg *tgbotapi.Message) string {
 
 	name, err := database.NickFromTGUser(user)
 	if err != nil {
-		name = user.FirstName
+		name = user.String()
 	}
 
 	return fmt.Sprintf("%s: %s\n", name, text)
