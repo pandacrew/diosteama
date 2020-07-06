@@ -3,6 +3,7 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/pandacrew-net/diosteama/database"
@@ -52,8 +53,23 @@ func quienes(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	bot.Send(msg)
 }
 
+func checkAdmin(bot *tgbotapi.BotAPI, ChatID int64, user *tgbotapi.User) bool {
+	member, err := bot.GetChatMember(tgbotapi.ChatConfigWithUser{
+		ChatID: ChatID,
+		UserID: user.ID,
+	})
+	fmt.Printf("\n%v\n", member)
+	return err == nil && (member.IsAdministrator() || member.IsCreator())
+}
+
 func es(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	var reply string
+
+	if !checkAdmin(bot, update.Message.Chat.ID, update.Message.From) {
+		log.Printf("%s esta intentado cambiar a alguien sin permiso", update.Message.From.UserName)
+		return
+	}
+
 	if len(argv) != 2 {
 		reply = fmt.Sprintf("Dime quien quieres que sea respondiendo al luser: !es TuNick")
 	} else {
