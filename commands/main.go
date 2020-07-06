@@ -30,7 +30,9 @@ func Command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		w00g(update, bot, argv)
 	case "soy":
 		soy(update, bot, argv)
-	case "quien":
-		quien(update, bot, argv)
+	case "quienes":
+		quienes(update, bot, argv)
+	case "es":
+		es(update, bot, argv)
 	}
 }

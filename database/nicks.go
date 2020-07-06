@@ -86,8 +86,8 @@ func TGUserFromNick(nick string) (string, error) {
 	return TGUser, nil
 }
 
-// SetNick associates the telegram user and given nick
-func SetNick(user *tgbotapi.User, nick string) error {
+// UserNickIsAssociated Checks if the user or the nick has a previous association
+func UserNickIsAssociated(user *tgbotapi.User, nick string) error {
 	var count int
 	query := fmt.Sprintf(`SELECT count(*) from %s WHERE nick = $1 or tg_id = $2`, UsersTable)
 	err := pool.QueryRow(context.Background(), query, nick, user.ID).Scan(&count)
@@ -100,8 +100,13 @@ func SetNick(user *tgbotapi.User, nick string) error {
 		return fmt.Errorf("Nick or User: %w", ErrPandaExists)
 	}
 
-	insert := fmt.Sprintf("INSERT INTO %s (nick, tg_id, tg_username) VALUES ($1, $2, $3)", UsersTable)
-	_, err = pool.Exec(context.Background(), insert, nick, user.ID, user.UserName)
+	return nil
+}
+
+// insertNick updated nick and TG information on DB
+func insertNick(user *tgbotapi.User, nick string) error {
+	insert := fmt.Sprintf(`INSERT INTO %s (nick, tg_id, tg_username) VALUES ($1, $2, $3)`, UsersTable)
+	_, err := pool.Exec(context.Background(), insert, nick, user.ID, user.UserName)
 	if err != nil {
 		return fmt.Errorf("Could not add user: %s", err)
 	}
@@ -109,4 +114,69 @@ func SetNick(user *tgbotapi.User, nick string) error {
 	log.Printf("Añadido %s como %s", user.String(), nick)
 
 	return nil
+}
+
+// SetNick associates the telegram user and given nick
+func SetNick(user *tgbotapi.User, nick string) error {
+	if err := UserNickIsAssociated(user, nick); err != nil {
+		return err
+	}
+	return insertNick(user, nick)
+}
+
+func deleteNick(nick string) error {
+	// Im scared some ppl sending an * as username, that I will check before
+	var count int
+	query := fmt.Sprintf(`SELECT count(*) FROM %s WHERE nick = $1`, UsersTable)
+	err := pool.QueryRow(context.Background(), query, nick).Scan(&count)
+	if count > 1 {
+		return fmt.Errorf("You son of a bitch. Don't even try to hack me")
+	} else if count == 0 {
+		// No need to do anything
+		return nil
+	}
+
+	delete := fmt.Sprintf(`DELETE FROM %s WHERE nick = $1`, UsersTable)
+	_, err = pool.Exec(context.Background(), delete, nick)
+	if err != nil {
+		return fmt.Errorf("Could not delete user: %s", err)
+	}
+
+	return nil
+}
+
+func deleteUser(user *tgbotapi.User) error {
+	// Im scared some ppl sending an * as username, that I will check before
+	var count int
+	query := fmt.Sprintf(`SELECT count(*) FROM %s WHERE tg_id = $1`, UsersTable)
+	err := pool.QueryRow(context.Background(), query, user.ID).Scan(&count)
+	if count > 1 {
+		return fmt.Errorf("You son of a bitch. Don't even try to hack me")
+	} else if count == 0 {
+		// No need to do anything
+		return nil
+	}
+
+	delete := fmt.Sprintf(`DELETE FROM %s WHERE tg_id = $1`, UsersTable)
+	_, err = pool.Exec(context.Background(), delete, user.ID)
+	if err != nil {
+		return fmt.Errorf("Could not delete user: %s", err)
+	}
+
+	return nil
+}
+
+// AdminSetNick associates the telegram user and given nick even if those are associated before
+func AdminSetNick(user *tgbotapi.User, nick string) error {
+	if err := deleteNick(nick); err != nil {
+		log.Print(err)
+		return err
+	}
+
+	if err := deleteUser(user); err != nil {
+		log.Print(err)
+		return err
+	}
+
+	return insertNick(user, nick)
 }
