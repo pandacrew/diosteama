@@ -46,10 +46,6 @@ func NickFromTGUser(user *tgbotapi.User) (string, error) {
 		return "", fmt.Errorf("Error finding panda %s(%d): %w", user.String(), user.ID, err)
 	}
 
-	if nick == "" {
-		return "", fmt.Errorf("%s: %w", user.String(), ErrPandaNotFound)
-	}
-
 	return nick, nil
 }
 

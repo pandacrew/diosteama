@@ -38,13 +38,16 @@ func quienes(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 		reply = fmt.Sprintf("¿Por quien preguntas?")
 	} else {
 		username, err := database.TGUserFromNick(argv[1])
-		if err != nil {
-			if errors.Is(err, database.ErrPandaNotFound) {
+		if err == nil {
+			reply = fmt.Sprintf("@%s es el panda anteriormente conocido como %s", username, argv[1])
+		} else {
+			nick, err := database.NickFromTGUserName(argv[1])
+			if err == nil {
+				reply = fmt.Sprintf("@%s es el panda anteriormente conocido como %s", argv[1], nick)
+			} else {
+				log.Printf("Algo no fue bien: %s", err)
 				reply = fmt.Sprintf("No sé de quien me hablas.")
 			}
-			reply = fmt.Sprintf("Algo no fue bien: %s", err)
-		} else {
-			reply = fmt.Sprintf("@%s es el panda anteriormente conocido como %s", username, argv[1])
 		}
 	}
 
