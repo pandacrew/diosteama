@@ -3,7 +3,7 @@ package commands
 import (
 	"strings"
 
-	"github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 // Command executes a bot command
@@ -28,5 +28,9 @@ func Command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		chuches(update, bot, argv)
 	case "w00g":
 		w00g(update, bot, argv)
+	case "soy":
+		soy(update, bot, argv)
+	case "quien":
+		quien(update, bot, argv)
 	}
 }
