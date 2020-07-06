@@ -7,7 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/pandacrew-net/diosteama/database"
 	"github.com/pandacrew-net/diosteama/quotes"
 )
 
@@ -44,13 +45,20 @@ func RawQuote(msgs []*tgbotapi.Message) string {
 
 // RawQuoteMessage creates author: text from a raw message
 func RawQuoteMessage(msg *tgbotapi.Message) string {
+	var user *tgbotapi.User
 	var name, text string
 	if msg.ReplyToMessage != nil {
-		name = msg.ReplyToMessage.From.FirstName
+		user = msg.ReplyToMessage.From
 		text = msg.ReplyToMessage.Text
 	} else {
-		name = msg.ForwardFrom.FirstName
+		user = msg.ForwardFrom
 		text = msg.Text
 	}
+
+	name, err := database.NickFromTGUser(user)
+	if err != nil {
+		name = user.FirstName
+	}
+
 	return fmt.Sprintf("%s: %s\n", name, text)
 }
