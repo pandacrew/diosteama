@@ -64,6 +64,7 @@ func saveAddquote(uid int, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		var msg tgbotapi.MessageConfig
 
 		if len(existing.Messages) < 1 {
+			log.Printf("No messages to save")
 			return
 		}
 		quote.Date = strconv.Itoa(update.Message.Date)
@@ -91,7 +92,6 @@ func saveAddquote(uid int, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		log.Printf("Cleanup of addquotePool[%d]", uid)
 	} else {
 		log.Printf("weird error condition, we were called without an existing pool")
-
 	}
 }
 

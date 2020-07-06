@@ -7,7 +7,20 @@ import (
 	"log"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	pgx "github.com/jackc/pgx/v4"
 )
+
+/*
+Se necesita la siguiente tabla.
+
+CREATE TABLE public.{UsersTable} (
+    id SERIAL PRIMARY KEY,
+    nick varchar(80) NOT NULL UNIQUE,
+    tg_username varchar(120) UNIQUE,
+    tg_id integer NOT NULL UNIQUE
+);
+
+*/
 
 const UsersTable = "users"
 
@@ -24,15 +37,16 @@ var ErrPandaExists = errors.New("This panda already exists")
 func NickFromTGUser(user *tgbotapi.User) (string, error) {
 	var nick string
 
-	query := fmt.Sprintf(`SELECT nick FROM %s WHERE tg_userid = $1;`, UsersTable)
-	err := pool.QueryRow(context.Background(), query, user.ID).Scan(nick)
+	query := fmt.Sprintf(`SELECT nick FROM %s WHERE tg_id = $1;`, UsersTable)
+	err := pool.QueryRow(context.Background(), query, user.ID).Scan(&nick)
 	if err != nil {
-		log.Printf("Error finding panda %s. Fuck you.", user.String())
-		return "", err
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", fmt.Errorf("@%s: %w", user.String(), ErrPandaNotFound)
+		}
+		return "", fmt.Errorf("Error finding panda %s(%d): %w", user.String(), user.ID, err)
 	}
 
 	if nick == "" {
-		log.Printf("%s is not a panda.", user.String())
 		return "", fmt.Errorf("%s: %w", user.String(), ErrPandaNotFound)
 	}
 
@@ -44,15 +58,12 @@ func NickFromTGUserName(username string) (string, error) {
 	var nick string
 
 	query := fmt.Sprintf(`SELECT nick FROM %s WHERE tg_username = $1;`, UsersTable)
-	err := pool.QueryRow(context.Background(), query, username).Scan(nick)
+	err := pool.QueryRow(context.Background(), query, username).Scan(&nick)
 	if err != nil {
-		log.Printf("Error finding panda %s. Fuck you.", username)
-		return "", err
-	}
-
-	if nick == "" {
-		log.Printf("%s is not a panda.", username)
-		return "", fmt.Errorf("%s: %w", username, ErrPandaNotFound)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", fmt.Errorf("@%s: %w", username, ErrPandaNotFound)
+		}
+		return "", fmt.Errorf("Error finding panda for %s: %w", username, err)
 	}
 
 	return nick, nil
@@ -65,12 +76,10 @@ func TGUserFromNick(nick string) (string, error) {
 	query := fmt.Sprintf(`SELECT tg_username FROM %s WHERE nick = $1;`, UsersTable)
 	err := pool.QueryRow(context.Background(), query, nick).Scan(&TGUser)
 	if err != nil {
-		log.Printf("Error finding user for %s. Fuck you.", nick)
-		return "", err
+		return "", fmt.Errorf("Error finding user for %s: %w", nick, err)
 	}
 
 	if nick == "" {
-		log.Printf("%s doesn't have telegram.", nick)
 		return "", fmt.Errorf("%s: %w", nick, ErrPandaNotFound)
 	}
 
@@ -91,11 +100,13 @@ func SetNick(user *tgbotapi.User, nick string) error {
 		return fmt.Errorf("Nick or User: %w", ErrPandaExists)
 	}
 
-	insert := fmt.Sprintf("INSERT INTO %s (nick, tg_id, tg_username) VALUES ($1, $2)", UsersTable)
+	insert := fmt.Sprintf("INSERT INTO %s (nick, tg_id, tg_username) VALUES ($1, $2, $3)", UsersTable)
 	_, err = pool.Exec(context.Background(), insert, nick, user.ID, user.UserName)
 	if err != nil {
 		return fmt.Errorf("Could not add user: %s", err)
 	}
+
+	log.Printf("Añadido %s como %s", user.String(), nick)
 
 	return nil
 }
