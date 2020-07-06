@@ -45,7 +45,7 @@ func Info(recnum int, text ...string) (*quotes.Quote, error) {
 	var quote quotes.Quote
 	var order string
 
-	query := "SELECT recnum, quote, author, date FROM linux_gey_db"
+	query := "SELECT recnum, quote, author, date, telegram_messages, telegram_author FROM linux_gey_db"
 	where := ""
 	if len(text) > 0 {
 		where = fmt.Sprintf("WHERE LOWER(quote) LIKE LOWER('%%%s%%')", text[0])
@@ -58,7 +58,7 @@ func Info(recnum int, text ...string) (*quotes.Quote, error) {
 		where = fmt.Sprintf("WHERE recnum = %d", recnum)
 	}
 	err := pool.QueryRow(context.Background(),
-		fmt.Sprintf("%s %s %s", query, where, order)).Scan(&quote.Recnum, &quote.Text, &quote.Author, &quote.Date)
+		fmt.Sprintf("%s %s %s", query, where, order)).Scan(&quote.Recnum, &quote.Text, &quote.Author, &quote.Date, &quote.Messages, &quote.From)
 
 	if err != nil {
 		log.Printf("Error consultando DB: %s", err)
