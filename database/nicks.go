@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	pgx "github.com/jackc/pgx/v4"
@@ -66,27 +67,28 @@ func NickFromTGUserName(username string) (string, error) {
 }
 
 // TGUserFromNick return the Telegram user ID from a given nick
-func TGUserFromNick(nick string) (string, error) {
+func TGUserFromNick(nick string) (int, string, error) {
 	var TGUser string
+	var TGUserID int
 
-	query := fmt.Sprintf(`SELECT tg_username FROM %s WHERE nick = $1;`, UsersTable)
-	err := pool.QueryRow(context.Background(), query, nick).Scan(&TGUser)
+	query := fmt.Sprintf(`SELECT tg_id, tg_username FROM %s WHERE lower(nick) = $1;`, UsersTable)
+	err := pool.QueryRow(context.Background(), query, strings.ToLower(nick)).Scan(&TGUserID, &TGUser)
 	if err != nil {
-		return "", fmt.Errorf("Error finding user for %s: %w", nick, err)
+		return -1, "", fmt.Errorf("Error finding user for %s: %w", nick, err)
 	}
 
 	if nick == "" {
-		return "", fmt.Errorf("%s: %w", nick, ErrPandaNotFound)
+		return -1, "", fmt.Errorf("%s: %w", nick, ErrPandaNotFound)
 	}
 
-	return TGUser, nil
+	return TGUserID, TGUser, nil
 }
 
 // UserNickIsAssociated Checks if the user or the nick has a previous association
 func UserNickIsAssociated(user *tgbotapi.User, nick string) error {
 	var count int
-	query := fmt.Sprintf(`SELECT count(*) from %s WHERE nick = $1 or tg_id = $2`, UsersTable)
-	err := pool.QueryRow(context.Background(), query, nick, user.ID).Scan(&count)
+	query := fmt.Sprintf(`SELECT count(*) from %s WHERE lower(nick) = $1 or tg_id = $2`, UsersTable)
+	err := pool.QueryRow(context.Background(), query, strings.ToLower(nick), user.ID).Scan(&count)
 
 	if err != nil {
 		return fmt.Errorf("Something happened on DB: %s", err)
@@ -123,8 +125,8 @@ func SetNick(user *tgbotapi.User, nick string) error {
 func deleteNick(nick string) error {
 	// Im scared some ppl sending an * as username, that I will check before
 	var count int
-	query := fmt.Sprintf(`SELECT count(*) FROM %s WHERE nick = $1`, UsersTable)
-	err := pool.QueryRow(context.Background(), query, nick).Scan(&count)
+	query := fmt.Sprintf(`SELECT count(*) FROM %s WHERE lower(nick) = $1`, UsersTable)
+	err := pool.QueryRow(context.Background(), query, strings.ToLower(nick)).Scan(&count)
 	if count > 1 {
 		return fmt.Errorf("You son of a bitch. Don't even try to hack me")
 	} else if count == 0 {
