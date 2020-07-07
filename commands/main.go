@@ -10,22 +10,23 @@ import (
 func Command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	argv := strings.SplitN(update.Message.Text, " ", 3)
 	cmd := argv[0][1:]
+	args := argv[1:]
 
 	switch cmd {
 	case "addquote":
-		addquoteStart(update, bot, argv)
+		addquoteStart(update, bot, args)
 	case "quote":
-		quote(update, bot, argv)
+		quote(update, bot, args)
 	case "info":
-		info(update, bot, argv)
+		info(update, bot, args)
 	case "rquote":
-		rquote(update, bot, argv)
+		rquote(update, bot, args)
 	case "top":
-		top(update, bot, argv)
+		top(update, bot, args)
 	case "culote":
-		culote(update, bot, argv)
+		culote(update, bot, args)
 	case "chuches":
-		chuches(update, bot, argv)
+		chuches(update, bot, args)
 	case "w00g":
 		w00g(update, bot, argv)
 	case "soy":
@@ -34,5 +35,6 @@ func Command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		quienes(update, bot, argv)
 	case "es":
 		es(update, bot, argv)
+
 	}
 }
