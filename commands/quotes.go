@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pandacrew-net/diosteama/database"
 	"github.com/pandacrew-net/diosteama/format"
@@ -64,13 +64,14 @@ func saveAddquote(uid int, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		var msg tgbotapi.MessageConfig
 
 		if len(existing.Messages) < 1 {
+			log.Printf("No messages to save")
 			return
 		}
 		quote.Date = strconv.Itoa(update.Message.Date)
 		quote.Text = format.RawQuote(existing.Messages)
 		quote.Author = update.Message.From.FirstName // This would be better with a map of telegram users to irc nicks
 		quote.Messages = existing.Messages
-		quote.From = *update.Message.From
+		quote.From = update.Message.From
 
 		quote, err = database.InsertQuote(quote)
 
@@ -91,7 +92,6 @@ func saveAddquote(uid int, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		log.Printf("Cleanup of addquotePool[%d]", uid)
 	} else {
 		log.Printf("weird error condition, we were called without an existing pool")
-
 	}
 }
 
@@ -112,9 +112,12 @@ func quote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	var err error
 
 	if len(argv) == 0 { // rquote
-		reply, err = database.Info(-1)
+		var quote *quotes.Quote
+		quote, err = database.Info(-1)
 		if err != nil {
 			log.Println("Error reading quote: ", err)
+		} else {
+			reply = format.Quote(*quote)
 		}
 	} else {
 		offset, err := strconv.Atoi(argv[0])
@@ -135,17 +138,19 @@ func quote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 }
 
 func rquote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
+	var quote *quotes.Quote
 	var reply string
 	var err error
 
 	if len(argv) == 0 {
-		reply, err = database.Info(-1)
+		quote, err = database.Info(-1)
 	} else if len(argv) == 1 {
-		reply, err = database.Info(-1, argv[0])
+		quote, err = database.Info(-1, argv[1])
 	}
 	if err != nil {
 		log.Println("Error reading quote: ", err)
 	}
+	reply = format.Quote(*quote)
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 	msg.ParseMode = "html"
 	bot.Send(msg)
@@ -167,7 +172,7 @@ func info(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	if err != nil {
 		log.Println("Error reading quote: ", err)
 	} else {
-		reply = quote
+		reply = format.Quote(*quote)
 	}
 
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)

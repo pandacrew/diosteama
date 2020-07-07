@@ -1,7 +1,7 @@
 package quotes
 
 import (
-	"github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 // Quote is the full quote
@@ -11,5 +11,5 @@ type Quote struct {
 	Author   string
 	Text     string
 	Messages []*tgbotapi.Message
-	From     tgbotapi.User
+	From     *tgbotapi.User
 }

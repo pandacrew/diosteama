@@ -4,3 +4,5 @@
 diosteama
 *.swp
 *.env
+temp/*
+*.exe
