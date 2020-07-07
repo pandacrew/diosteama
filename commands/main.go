@@ -28,13 +28,13 @@ func Command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	case "chuches":
 		chuches(update, bot, args)
 	case "w00g":
-		w00g(update, bot, argv)
+		w00g(update, bot, args)
 	case "soy":
-		soy(update, bot, argv)
+		soy(update, bot, args)
 	case "quienes":
-		quienes(update, bot, argv)
+		quienes(update, bot, args)
 	case "es":
-		es(update, bot, argv)
+		es(update, bot, args)
 
 	}
 }
