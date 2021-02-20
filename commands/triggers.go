@@ -33,4 +33,18 @@ func Triggers(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		bot.Send(msg)
 		return
 	}
+
+	if strings.Contains(strings.ToLower(update.Message.Text), "casoplon") {
+		reply := "Agárrame un cojón. Menosmola."
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+		bot.Send(msg)
+		return
+	}
+
+	if strings.Contains(strings.ToLower(update.Message.Text), "menosmola") {
+		reply := "Tócame las bolas."
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+		bot.Send(msg)
+		return
+	}
 }
