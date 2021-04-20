@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"html"
 	"log"
@@ -152,4 +153,48 @@ func Top(i int) (string, error) {
 		return b.String(), err
 	}
 	return b.String(), err
+}
+
+// Pre-requisite: 1st time needs to run "scripts/alterDeleteFlagToQuotes.sql" file in DB to add column
+// MarkQuoteAsRemoved marks a quote with identifier id as removed
+func MarkQuoteAsRemoved(recnum int) error {
+	quote, err := FindQuoteById(recnum)
+	if err != nil {
+		log.Printf("Quote with id %d wasn't found", recnum)
+		return err
+	}
+	const updateStmt = "UPDATE linux_gey_db " +
+		"SET removed = curret_timestamp " +
+		"WHERE removed is null AND recnum = $1;"
+
+	_, err = pool.Exec(context.Background(), updateStmt, quote.Recnum)
+
+	return err
+}
+
+var dontMessErr = errors.New("Don't mess with me! AKA no me toques lo que no suena!")
+
+// FindQuoteById Finds a quote by it's unique id
+func FindQuoteById(recnum int) (*quotes.Quote, error) {
+	if recnum < 1 {
+		return nil, dontMessErr
+	}
+
+	const findQuoteByIdQuery = "SELECT " +
+		"recnum, quote, author, date, telegram_messages, telegram_author " +
+		"FROM linux_gey_db " +
+		"WHERE recnum = $1" +
+		"AND removed is not null;"
+
+	var quote quotes.Quote
+	err := pool.QueryRow(context.Background(), findQuoteByIdQuery).
+		Scan(&quote.Recnum, &quote.Text, &quote.Author, &quote.Date, &quote.Messages, &quote.From)
+
+	if err != nil {
+		log.Printf("Error consultando DB: %s", err)
+		return nil, fmt.Errorf("%w", err)
+	}
+	log.Println(quote.Recnum, quote.Text, quote.Author, quote.Date)
+
+	return &quote, nil
 }

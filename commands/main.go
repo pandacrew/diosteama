@@ -35,6 +35,7 @@ func Command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		quienes(update, bot, args)
 	case "es":
 		es(update, bot, args)
-
+	case "rmquote":
+		removeQuote(update, bot, args)
 	}
 }
