@@ -171,6 +171,7 @@ func info(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	quote, err := database.Info(qid)
 	if err != nil {
 		log.Println("Error reading quote: ", err)
+		reply = fmt.Sprintf("Quote %d not found", qid);
 	} else {
 		reply = format.Quote(*quote)
 	}
@@ -195,7 +196,10 @@ func removeQuote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	if err != nil {
 		log.Printf("Error removing quote %d: %v", quoteId, err)
 		reply = "Error. Quote wasn't removed due errors"
+	} else {
+		reply = fmt.Sprintf("Quote %d removed!", quoteId)
 	}
+
 
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 	msg.ParseMode = "html"

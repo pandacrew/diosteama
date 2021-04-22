@@ -46,23 +46,24 @@ func Info(recnum int, text ...string) (*quotes.Quote, error) {
 	var quote quotes.Quote
 	var order string
 
-	query := "SELECT recnum, quote, author, date, telegram_messages, telegram_author FROM linux_gey_db"
+	query := `SELECT recnum, quote, author, date, telegram_messages, telegram_author
+		 FROM linux_gey_db WHERE removed is null`
 	where := ""
 	if len(text) > 0 {
-		where = fmt.Sprintf("WHERE LOWER(quote) LIKE LOWER('%%%s%%')", text[0])
+		where = fmt.Sprintf("AND LOWER(quote) LIKE LOWER('%%%s%%')", text[0])
 	}
 
 	if recnum < 1 {
 		log.Println("Random quote")
 		order = "ORDER BY random() LIMIT 1"
 	} else {
-		where = fmt.Sprintf("WHERE recnum = %d", recnum)
+		where = fmt.Sprintf("AND recnum = %d", recnum)
 	}
 	err := pool.QueryRow(context.Background(),
 		fmt.Sprintf("%s %s %s", query, where, order)).Scan(&quote.Recnum, &quote.Text, &quote.Author, &quote.Date, &quote.Messages, &quote.From)
 
 	if err != nil {
-		log.Printf("Error consultando DB: %s", err)
+		log.Printf("[Info] Error consultando DB: %s", err)
 		return nil, fmt.Errorf("%w", err)
 	}
 	log.Println(quote.Recnum, quote.Text, quote.Author, quote.Date)
@@ -78,7 +79,7 @@ func GetQuote(q string, offset int) (string, error) {
 	pq := strings.Replace(q, "*", "%", -1)
 	query := fmt.Sprintf(`
 	SELECT count(*)
-	FROM linux_gey_db WHERE LOWER(quote) LIKE LOWER('%%%s%%');`, pq)
+	FROM linux_gey_db WHERE removed is null AND LOWER(quote) LIKE LOWER('%%%s%%');`, pq)
 	err := pool.QueryRow(context.Background(), query).Scan(&count)
 	if err != nil || count < 1 {
 		return fmt.Sprintf("Por %s no me sale nada", q), nil
@@ -86,7 +87,7 @@ func GetQuote(q string, offset int) (string, error) {
 
 	query = fmt.Sprintf(`
 	SELECT recnum, quote
-	FROM linux_gey_db WHERE LOWER(quote) LIKE LOWER('%%%s%%')
+	FROM linux_gey_db WHERE removed is null AND LOWER(quote) LIKE LOWER('%%%s%%')
 	ORDER BY recnum ASC LIMIT 5 OFFSET %d;`, pq, offset)
 	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
@@ -125,7 +126,7 @@ func Top(i int) (string, error) {
 	if i < 0 {
 		i = 10
 	}
-	query := "select count(*) as c, split_part(author, '!', 1) as a from linux_gey_db group by a order by c desc limit $1;"
+	query := "select count(*) as c, split_part(author, '!', 1) as a from linux_gey_db where removed is null group by a order by c desc limit $1;"
 	rows, err := pool.Query(context.Background(), query, i)
 	if err != nil {
 		log.Printf("Error listing top %d. Fuck you.", i)
@@ -160,11 +161,11 @@ func Top(i int) (string, error) {
 func MarkQuoteAsRemoved(recnum int) error {
 	quote, err := FindQuoteById(recnum)
 	if err != nil {
-		log.Printf("Quote with id %d wasn't found", recnum)
+		log.Printf("[MarkQuoteAsRemoved] Quote with id %d wasn't found", recnum)
 		return err
 	}
 	const updateStmt = "UPDATE linux_gey_db " +
-		"SET removed = curret_timestamp " +
+		"SET removed = current_timestamp " +
 		"WHERE removed is null AND recnum = $1;"
 
 	_, err = pool.Exec(context.Background(), updateStmt, quote.Recnum)
@@ -180,18 +181,18 @@ func FindQuoteById(recnum int) (*quotes.Quote, error) {
 		return nil, dontMessErr
 	}
 
-	const findQuoteByIdQuery = "SELECT " +
-		"recnum, quote, author, date, telegram_messages, telegram_author " +
-		"FROM linux_gey_db " +
-		"WHERE recnum = $1" +
-		"AND removed is not null;"
+	const findQuoteByIdQuery = `
+	        SELECT recnum, quote, author, date, telegram_messages, telegram_author
+		FROM linux_gey_db 
+		WHERE recnum = $1
+		AND removed is null;`
 
 	var quote quotes.Quote
-	err := pool.QueryRow(context.Background(), findQuoteByIdQuery).
+	err := pool.QueryRow(context.Background(), findQuoteByIdQuery, recnum).
 		Scan(&quote.Recnum, &quote.Text, &quote.Author, &quote.Date, &quote.Messages, &quote.From)
 
 	if err != nil {
-		log.Printf("Error consultando DB: %s", err)
+		log.Printf("[FindQuoteById] Error consultando DB: %s", err)
 		return nil, fmt.Errorf("%w", err)
 	}
 	log.Println(quote.Recnum, quote.Text, quote.Author, quote.Date)
