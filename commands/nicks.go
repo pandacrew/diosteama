@@ -13,13 +13,13 @@ import (
 func soy(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	var reply string
 	if len(argv) != 1 {
-		reply = fmt.Sprintf("Dime quien eres: !soy TuNick")
+		reply = "Dime quien eres: !soy TuNick"
 	} else {
 		nick := argv[0]
 		err := database.SetNick(update.Message.From, nick)
 		if err != nil {
 			if errors.Is(err, database.ErrPandaExists) {
-				reply = fmt.Sprintf("Tu ya eres")
+				reply = "Tu ya eres"
 			} else {
 				reply = fmt.Sprintf("Algo no fue bien: %s", err)
 			}
@@ -39,7 +39,7 @@ func quienes(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	log.Printf("%v\n", argv)
 
 	if len(argv) != 1 {
-		reply = fmt.Sprintf("¿Por quien preguntas?")
+		reply = "¿Por quien preguntas?"
 	} else {
 		term := argv[0]
 		username, err := database.TGUserFromNick(term)
@@ -51,7 +51,7 @@ func quienes(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 				reply = fmt.Sprintf("@%s es el panda anteriormente conocido como %s", term, nick)
 			} else {
 				log.Printf("Algo no fue bien: %s", err)
-				reply = fmt.Sprintf("No sé de quien me hablas.")
+				reply = "No sé de quien me hablas."
 			}
 		}
 	}
@@ -79,18 +79,18 @@ func es(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	}
 
 	if len(argv) != 1 {
-		reply = fmt.Sprintf("Dime quien quieres que sea respondiendo al luser: !es TuNick")
+		reply = "Dime quien quieres que sea respondiendo al luser: !es TuNick"
 	} else {
 		nick := argv[0]
 
 		if update.Message.ReplyToMessage == nil || update.Message.ReplyToMessage.From == nil {
-			reply = fmt.Sprintf("No se de quien hablas")
+			reply = "No se de quien hablas"
 		} else {
 			user := update.Message.ReplyToMessage.From
 			err := database.AdminSetNick(user, nick)
 			if err != nil {
 				if errors.Is(err, database.ErrPandaExists) {
-					reply = fmt.Sprintf("Tu ya eres")
+					reply = "Tu ya eres"
 				} else {
 					reply = fmt.Sprintf("Algo no fue bien: %s", err)
 				}
