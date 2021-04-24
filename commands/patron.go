@@ -6,7 +6,7 @@ import (
 
 func patron(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	const patronImagePath string = "/resources/images/patron.jpeg"
-	msg := tgbotapi.NewPhotoShare(update.Message.Chat.ID, patronImagePath)
+	msg := tgbotapi.NewPhotoUpload(update.Message.Chat.ID, patronImagePath)
 	_, err := bot.Send(msg)
 	if err != nil {
 		msgErr := tgbotapi.NewMessage(update.Message.Chat.ID, "Error reading resource "+patronImagePath)
