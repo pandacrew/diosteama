@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"strconv"
 	"strings"
@@ -179,20 +178,4 @@ func info(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 	msg.ParseMode = "html"
 	bot.Send(msg)
-}
-
-func patron(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
-	//https://stackoverflow.com/questions/66907004/go-telegram-bot-api-upload-photo-from-local-file
-	const patronImagePath = "/resources/images/patron.jpeg"
-	photoBytes, err := ioutil.ReadFile(patronImagePath)
-	if err != nil {
-		message := tgbotapi.NewMessage(update.Message.Chat.ID, "Error reading resource " + patronImagePath)
-		message.ParseMode = "html"
-		bot.Send(message)
-	} else {
-		photoFileBytes := tgbotapi.FileBytes{
-		    Name:  "picture",
-		    Bytes: photoBytes,}
-		    bot.Send(tgbotapi.NewPhotoUpload(update.Message.Chat.ID, photoFileBytes))
-	}
 }
