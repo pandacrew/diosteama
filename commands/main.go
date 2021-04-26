@@ -20,6 +20,7 @@ var invokers = map[string]commandFunction{
 	"soy":      soy,
 	"quienes":  quienes,
 	"es":       es,
+  "delquote": removeQuote
 }
 
 // Command executes a bot command
