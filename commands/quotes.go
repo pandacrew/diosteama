@@ -8,11 +8,13 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pandacrew-net/diosteama/database"
 	"github.com/pandacrew-net/diosteama/format"
 	"github.com/pandacrew-net/diosteama/quotes"
 )
 
+var pool *pgxpool.Pool
 var addquotePool map[int]Addquote
 var addquoteWait = 800 * time.Millisecond
 
@@ -169,35 +171,9 @@ func info(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	quote, err := database.Info(qid)
 	if err != nil {
 		log.Println("Error reading quote: ", err)
-		reply = fmt.Sprintf("Quote %d not found", qid);
 	} else {
 		reply = format.Quote(*quote)
 	}
-
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
-	msg.ParseMode = "html"
-	bot.Send(msg)
-}
-
-func removeQuote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
-	var reply string
-	if len(argv) < 1 {
-		reply = "Error. Format is !rmquote <quote id>"
-	}
-
-	quoteId, err := strconv.Atoi(argv[0])
-	if err != nil {
-		reply = "Error. Format is !rmquote <quote id>"
-	}
-
-	err = database.MarkQuoteAsRemoved(quoteId)
-	if err != nil {
-		log.Printf("Error removing quote %d: %v", quoteId, err)
-		reply = "Error. Quote wasn't removed due errors"
-	} else {
-		reply = fmt.Sprintf("Quote %d removed!", quoteId)
-	}
-
 
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 	msg.ParseMode = "html"
