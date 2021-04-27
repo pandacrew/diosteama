@@ -8,11 +8,13 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pandacrew-net/diosteama/database"
 	"github.com/pandacrew-net/diosteama/format"
 	"github.com/pandacrew-net/diosteama/quotes"
 )
 
+var pool *pgxpool.Pool
 var addquotePool map[int]Addquote
 var addquoteWait = 800 * time.Millisecond
 
