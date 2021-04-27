@@ -181,23 +181,23 @@ func info(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	bot.Send(msg)
 }
 
-func removeQuote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
+func deleteQuote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	var reply string
 	if len(argv) < 1 {
-		reply = "Error. Format is !rmquote <quote id>"
+		reply = "Error. Format is !delquote <quote id>"
 	}
 
 	quoteId, err := strconv.Atoi(argv[0])
 	if err != nil {
-		reply = "Error. Format is !rmquote <quote id>"
+		reply = "Error. Format is !delquote <quote id>"
 	}
 
-	err = database.MarkQuoteAsRemoved(quoteId)
+	err = database.MarkQuoteAsDeleted(quoteId)
 	if err != nil {
-		log.Printf("Error removing quote %d: %v", quoteId, err)
-		reply = "Error. Quote wasn't removed due errors"
+		log.Printf("Error deleting quote %d: %v", quoteId, err)
+		reply = "Error. Quote wasn't deleted due errors"
 	} else {
-		reply = fmt.Sprintf("Quote %d removed!", quoteId)
+		reply = fmt.Sprintf("Quote %d deleted!", quoteId)
 	}
 
 

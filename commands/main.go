@@ -36,6 +36,6 @@ func Command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	case "es":
 		es(update, bot, args)
 	case "delquote":
-		removeQuote(update, bot, args)
+		deleteQuote(update, bot, args)
 	}
 }

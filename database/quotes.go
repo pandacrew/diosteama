@@ -47,7 +47,7 @@ func Info(recnum int, text ...string) (*quotes.Quote, error) {
 	var order string
 
 	query := `SELECT recnum, quote, author, date, telegram_messages, telegram_author
-		 FROM linux_gey_db WHERE removed is null`
+		 FROM linux_gey_db WHERE deleted is null`
 	where := ""
 	if len(text) > 0 {
 		where = fmt.Sprintf("AND LOWER(quote) LIKE LOWER('%%%s%%')", text[0])
@@ -79,7 +79,7 @@ func GetQuote(q string, offset int) (string, error) {
 	pq := strings.Replace(q, "*", "%", -1)
 	query := fmt.Sprintf(`
 	SELECT count(*)
-	FROM linux_gey_db WHERE removed is null AND LOWER(quote) LIKE LOWER('%%%s%%');`, pq)
+	FROM linux_gey_db WHERE deleted is null AND LOWER(quote) LIKE LOWER('%%%s%%');`, pq)
 	err := pool.QueryRow(context.Background(), query).Scan(&count)
 	if err != nil || count < 1 {
 		return fmt.Sprintf("Por %s no me sale nada", q), nil
@@ -87,7 +87,7 @@ func GetQuote(q string, offset int) (string, error) {
 
 	query = fmt.Sprintf(`
 	SELECT recnum, quote
-	FROM linux_gey_db WHERE removed is null AND LOWER(quote) LIKE LOWER('%%%s%%')
+	FROM linux_gey_db WHERE deleted is null AND LOWER(quote) LIKE LOWER('%%%s%%')
 	ORDER BY recnum ASC LIMIT 5 OFFSET %d;`, pq, offset)
 	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
@@ -126,7 +126,7 @@ func Top(i int) (string, error) {
 	if i < 0 {
 		i = 10
 	}
-	query := "select count(*) as c, split_part(author, '!', 1) as a from linux_gey_db where removed is null group by a order by c desc limit $1;"
+	query := "select count(*) as c, split_part(author, '!', 1) as a from linux_gey_db where deleted is null group by a order by c desc limit $1;"
 	rows, err := pool.Query(context.Background(), query, i)
 	if err != nil {
 		log.Printf("Error listing top %d. Fuck you.", i)
@@ -157,16 +157,16 @@ func Top(i int) (string, error) {
 }
 
 // Pre-requisite: 1st time needs to run "scripts/alterDeleteFlagToQuotes.sql" file in DB to add column
-// MarkQuoteAsRemoved marks a quote with identifier id as removed
-func MarkQuoteAsRemoved(recnum int) error {
+// MarkQuoteAsDeleted marks a quote with identifier id as deleted
+func MarkQuoteAsDeleted(recnum int) error {
 	quote, err := FindQuoteById(recnum)
 	if err != nil {
-		log.Printf("[MarkQuoteAsRemoved] Quote with id %d wasn't found", recnum)
+		log.Printf("[MarkQuoteAsDeleted] Quote with id %d wasn't found", recnum)
 		return err
 	}
 	const updateStmt = "UPDATE linux_gey_db " +
-		"SET removed = current_timestamp " +
-		"WHERE removed is null AND recnum = $1;"
+		"SET deleted = current_timestamp " +
+		"WHERE deleted is null AND recnum = $1;"
 
 	_, err = pool.Exec(context.Background(), updateStmt, quote.Recnum)
 
@@ -182,10 +182,10 @@ func FindQuoteById(recnum int) (*quotes.Quote, error) {
 	}
 
 	const findQuoteByIdQuery = `
-	        SELECT recnum, quote, author, date, telegram_messages, telegram_author
+		SELECT recnum, quote, author, date, telegram_messages, telegram_author
 		FROM linux_gey_db 
 		WHERE recnum = $1
-		AND removed is null;`
+		AND deleted is null;`
 
 	var quote quotes.Quote
 	err := pool.QueryRow(context.Background(), findQuoteByIdQuery, recnum).
