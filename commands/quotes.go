@@ -107,7 +107,7 @@ func rquote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	if len(argv) == 0 {
 		quote, err = database.Info(-1)
 	} else if len(argv) == 1 {
-		quote, err = database.Info(-1, argv[1])
+		quote, err = database.Info(-1, argv[0])
 	}
 	if err != nil {
 		log.Println("Error reading quote: ", err)

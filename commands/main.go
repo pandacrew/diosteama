@@ -37,5 +37,7 @@ func Command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		es(update, bot, args)
 	case "repite":
 		repite(update, bot, args)
+	case "patron":
+		patron(update, bot, args)
 	}
 }
