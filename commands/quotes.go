@@ -5,7 +5,6 @@ import (
 	"log"
 	"strconv"
 	"strings"
-	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -15,96 +14,59 @@ import (
 )
 
 var pool *pgxpool.Pool
-var addquotePool map[int]Addquote
-var addquoteWait = 800 * time.Millisecond
 
-type Addquote struct {
-	UserID   int
-	Messages []*tgbotapi.Message
-	Timer    *time.Timer
-}
+func addquote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
+	m := update.Message
 
-func addquoteStart(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
-	addquotePool = make(map[int]Addquote)
-	uid := update.Message.From.ID
-	if update.Message.ForwardDate > 0 {
+	// If its a reply, just use the message
+	if m.ReplyToMessage != nil {
+		q := msgQueue{
+			UserID:   m.From.ID,
+			Messages: []*tgbotapi.Message{m},
+		}
+		saveQuotes(update, bot, q)
 		return
 	}
-	if existing, exists := addquotePool[uid]; exists {
-		// Stop timer for previous addquote, save and start a new one
-		existing.Timer.Stop()
-		saveAddquote(uid, update, bot)
+
+	// If not, get the forwarded messages with a message queue
+	cb := func(q msgQueue) {
+		saveQuotes(update, bot, q)
 	}
-	if update.Message.ReplyToMessage != nil {
-		addquote := Addquote{
-			UserID: uid,
-		}
-		addquote.Messages = append(addquotePool[uid].Messages, update.Message)
-		addquotePool[uid] = addquote
-		saveAddquote(uid, update, bot)
+
+	StartMsgQueue(update.Message, cb)
+}
+
+func saveQuotes(update tgbotapi.Update, bot *tgbotapi.BotAPI, q msgQueue) {
+	var quote quotes.Quote
+	var err error
+	var added string
+	var msg tgbotapi.MessageConfig
+
+	if len(q.Messages) < 1 {
+		log.Printf("No messages to save")
 		return
 	}
-	commit := func() {
-		log.Printf("Expired timer for %d, %s, %s", uid, update.Message.From, update.Message.Date)
-		saveAddquote(uid, update, bot)
+	quote.Date = strconv.Itoa(update.Message.Date)
+	quote.Text = format.RawQuote(q.Messages)
+	quote.Author = format.PrettyUser(update.Message.From) // This would be better with a map of telegram users to irc nicks
+	quote.Messages = q.Messages
+	quote.From = update.Message.From
+
+	quote, err = database.InsertQuote(quote)
+
+	if err != nil {
+		//time.Sleep(addquoteWait)
+		//saveAddquote(uid, update, bot)
+		log.Fatalf("Error saving quote %d: %v", quote.Recnum, err)
 	}
-	addquotePool[uid] = Addquote{
-		UserID: uid,
-		Timer:  time.AfterFunc(addquoteWait, commit),
-	}
 
-}
+	log.Printf("Saved quote %d for %d, %s, %d", quote.Recnum, q.UserID, quote.From, update.Message.Date)
 
-func saveAddquote(uid int, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	if existing, exists := addquotePool[uid]; exists {
-
-		var quote quotes.Quote
-		var err error
-		var added string
-		var msg tgbotapi.MessageConfig
-
-		if len(existing.Messages) < 1 {
-			log.Printf("No messages to save")
-			return
-		}
-		quote.Date = strconv.Itoa(update.Message.Date)
-		quote.Text = format.RawQuote(existing.Messages)
-		quote.Author = update.Message.From.FirstName // This would be better with a map of telegram users to irc nicks
-		quote.Messages = existing.Messages
-		quote.From = update.Message.From
-
-		quote, err = database.InsertQuote(quote)
-
-		if err != nil {
-			//time.Sleep(addquoteWait)
-			//saveAddquote(uid, update, bot)
-			log.Fatalf("Error saving quote %d: %v", quote.Recnum, err)
-		}
-
-		log.Printf("Saved quote %d for %d, %s, %s", quote.Recnum, uid, quote.From, update.Message.Date)
-
-		added = fmt.Sprintf("Quote added: %d", quote.Recnum)
-		log.Println(added)
-		msg = tgbotapi.NewMessage(update.Message.Chat.ID, added)
-		msg.ParseMode = "html"
-		bot.Send(msg)
-		delete(addquotePool, uid)
-		log.Printf("Cleanup of addquotePool[%d]", uid)
-	} else {
-		log.Printf("weird error condition, we were called without an existing pool")
-	}
-}
-
-// EvalAddquote checks if message is a forward part of an addquote and has been processed
-func EvalAddquote(update tgbotapi.Update) bool {
-	uid := update.Message.From.ID
-	if existing, exists := addquotePool[uid]; exists && update.Message.ForwardDate > 0 {
-		existing.Timer.Reset(addquoteWait)
-		existing.Messages = append(existing.Messages, update.Message)
-		addquotePool[uid] = existing
-		return true
-	}
-	return false
+	added = fmt.Sprintf("Quote added: %d", quote.Recnum)
+	log.Println(added)
+	msg = tgbotapi.NewMessage(update.Message.Chat.ID, added)
+	msg.ParseMode = "html"
+	bot.Send(msg)
 }
 
 func quote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
@@ -171,7 +133,6 @@ func info(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	quote, err := database.Info(qid)
 	if err != nil {
 		log.Println("Error reading quote: ", err)
-		reply = fmt.Sprintf("Quote %d not found", qid);
 	} else {
 		reply = format.Quote(*quote)
 	}
@@ -199,7 +160,6 @@ func deleteQuote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	} else {
 		reply = fmt.Sprintf("Quote %d deleted!", quoteId)
 	}
-
 
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 	msg.ParseMode = "html"

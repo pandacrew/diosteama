@@ -3,7 +3,6 @@ package format
 import (
 	"fmt"
 	"html"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -26,7 +25,7 @@ func PrettyUser(user *tgbotapi.User) string {
 	return fmt.Sprintf("@%s", user.UserName)
 }
 
-func parseTime(t string) time.Time {
+func ParseTime(t string) time.Time {
 	loc, err := time.LoadLocation("Europe/Berlin")
 	if err != nil {
 		fmt.Println(err)
@@ -39,35 +38,37 @@ func parseTime(t string) time.Time {
 	return tm
 }
 
+func FormatTGUser(u *tgbotapi.User) string {
+	nick, err := database.NickFromTGUser(u)
+	if err != nil {
+		nick = PrettyUser(u)
+	}
+	return nick
+}
+
 // Quote formats a quote to be delivered to the chat
 func Quote(quote quotes.Quote) string {
 	var nick string
-	var err error
-
 	if quote.From == nil {
 		nick = strings.SplitN(quote.Author, "!", 2)[0]
 	} else {
-		nick, err = database.NickFromTGUser(quote.From)
-		if err != nil {
-			nick = PrettyUser(quote.From)
-		}
+		nick = FormatTGUser(quote.From)
 	}
 	//💩🔞🔪💥
 
 	var text string
-	log.Printf("%v", quote.Messages)
 	if quote.Messages == nil {
 		text = html.EscapeString(quote.Text)
 	} else {
-		text = formatTGMessages(quote.Messages)
+		text = FormatTGMessages(quote.Messages)
 	}
 
 	formatted := fmt.Sprintf("<pre>%s</pre>\n\n<em>🚽 Quote %d by %s on %s</em>",
-		text, quote.Recnum, html.EscapeString(nick), parseTime(quote.Date))
+		text, quote.Recnum, html.EscapeString(nick), ParseTime(quote.Date))
 	return formatted
 }
 
-func formatTGMessages(msgs []*tgbotapi.Message) string {
+func FormatTGMessages(msgs []*tgbotapi.Message) string {
 	var result string
 	for i := range msgs {
 		result = result + formatTGMessage(msgs[i])
@@ -78,6 +79,7 @@ func formatTGMessages(msgs []*tgbotapi.Message) string {
 func formatTGMessage(msg *tgbotapi.Message) string {
 	var user *tgbotapi.User
 	var name, text string
+
 	if msg.ReplyToMessage != nil {
 		user = msg.ReplyToMessage.From
 		text = msg.ReplyToMessage.Text
