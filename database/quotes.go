@@ -50,14 +50,14 @@ func Info(recnum int, text ...string) (*quotes.Quote, error) {
 		 FROM linux_gey_db WHERE deleted is null`
 	where := ""
 	if len(text) > 0 {
-		where = fmt.Sprintf("WHERE LOWER(quote) LIKE LOWER('%%%s%%')", text[0])
+		where = fmt.Sprintf("AND LOWER(quote) LIKE LOWER('%%%s%%')", text[0])
 	}
 
 	if recnum < 1 {
 		log.Println("Random quote")
 		order = "ORDER BY random() LIMIT 1"
 	} else {
-		where = fmt.Sprintf("WHERE recnum = %d", recnum)
+		where = fmt.Sprintf("AND recnum = %d", recnum)
 	}
 	err := pool.QueryRow(context.Background(),
 		fmt.Sprintf("%s %s %s", query, where, order)).Scan(&quote.Recnum, &quote.Text, &quote.Author, &quote.Date, &quote.Messages, &quote.From)
