@@ -14,7 +14,7 @@ func Command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 	switch cmd {
 	case "addquote":
-		addquoteStart(update, bot, args)
+		addquote(update, bot, args)
 	case "quote":
 		quote(update, bot, args)
 	case "info":
@@ -37,5 +37,9 @@ func Command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		es(update, bot, args)
 	case "delquote":
 		deleteQuote(update, bot, args)
+	case "repite":
+		repite(update, bot, args)
+	case "patron":
+		patron(update, bot, args)
 	}
 }

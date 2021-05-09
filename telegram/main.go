@@ -6,7 +6,7 @@ import (
 
 	"encoding/json"
 
-	"github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/pandacrew-net/diosteama/commands"
 )
 
@@ -45,8 +45,8 @@ func Start() {
 
 func response(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
-	if commands.EvalAddquote(update) {
-		// This is a forward part of an !addquote and has been processed. Return.
+	// Check if the message is forwarded and should be enqueued
+	if commands.EvalMessageToQueue(update) {
 		return
 	}
 
