@@ -153,10 +153,10 @@ func deleteQuote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 		reply = "Error. Format is !delquote <quote id>"
 	}
 
-	err = database.MarkQuoteAsDeleted(quoteId)
+	err = database.MarkQuoteAsDeleted(quoteId, format.PrettyUser(update.Message.From))
 	if err != nil {
 		log.Printf("Error deleting quote %d: %v", quoteId, err)
-		reply = "Error. Quote wasn't deleted due errors"
+		reply = fmt.Sprintf("Error. Quote wasn't deleted due errors (%v)", err)
 	} else {
 		reply = fmt.Sprintf("Quote %d deleted!", quoteId)
 	}

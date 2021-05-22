@@ -158,27 +158,27 @@ func Top(i int) (string, error) {
 
 // Pre-requisite: 1st time needs to run "scripts/alterDeleteFlagToQuotes.sql" file in DB to add column
 // MarkQuoteAsDeleted marks a quote with identifier id as deleted
-func MarkQuoteAsDeleted(recnum int) error {
+func MarkQuoteAsDeleted(recnum int, user string) error {
 	quote, err := FindQuoteById(recnum)
 	if err != nil {
 		log.Printf("[MarkQuoteAsDeleted] Quote with id %d wasn't found", recnum)
 		return err
 	}
-	const updateStmt = "UPDATE linux_gey_db " +
-		"SET deleted = current_timestamp " +
-		"WHERE deleted is null AND recnum = $1;"
+	const updateStmt = `UPDATE linux_gey_db 
+		SET deleted = current_timestamp, deleted_by = $2
+		WHERE deleted is null AND recnum = $1;`
 
-	_, err = pool.Exec(context.Background(), updateStmt, quote.Recnum)
+	_, err = pool.Exec(context.Background(), updateStmt, quote.Recnum, user)
 
 	return err
 }
 
-var dontMessErr = errors.New("Don't mess with me! AKA no me toques lo que no suena!")
+var errDontMess = errors.New("don't mess with me! AKA no me toques lo que no suena")
 
 // FindQuoteById Finds a quote by it's unique id
 func FindQuoteById(recnum int) (*quotes.Quote, error) {
 	if recnum < 1 {
-		return nil, dontMessErr
+		return nil, errDontMess
 	}
 
 	const findQuoteByIdQuery = `
@@ -192,7 +192,7 @@ func FindQuoteById(recnum int) (*quotes.Quote, error) {
 		Scan(&quote.Recnum, &quote.Text, &quote.Author, &quote.Date, &quote.Messages, &quote.From)
 
 	if err != nil {
-		log.Printf("[FindQuoteById] Error consultando DB: %s", err)
+		log.Printf("[FindQuoteById] Error consultando DB: %v", err)
 		return nil, fmt.Errorf("%w", err)
 	}
 	log.Println(quote.Recnum, quote.Text, quote.Author, quote.Date)
