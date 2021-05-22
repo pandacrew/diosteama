@@ -165,3 +165,31 @@ func deleteQuote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	msg.ParseMode = "html"
 	bot.Send(msg)
 }
+
+func undeleteQuote(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
+	var reply string
+	if !checkAdmin(bot, update.Message.Chat.ID, update.Message.From) {
+		reply = fmt.Sprintf("%s esta intentado cambiar el pasado sin permiso", update.Message.From.UserName)
+	} else {
+		if len(argv) < 1 {
+			reply = "Error. Format is !undelquote <quote id>"
+		}
+
+		quoteId, err := strconv.Atoi(argv[0])
+		if err != nil {
+			reply = "Error. Format is !undelquote <quote id>"
+		}
+
+		err = database.UnmarkQuoteAsDeleted(quoteId)
+		if err != nil {
+			log.Printf("Error undeleting quote %d: %v", quoteId, err)
+			reply = fmt.Sprintf("Error. Quote wasn't undeleted due errors (%v)", err)
+		} else {
+			reply = fmt.Sprintf("Quote %d undeleted!", quoteId)
+		}
+	}
+
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+	msg.ParseMode = "html"
+	bot.Send(msg)
+}
