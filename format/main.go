@@ -84,8 +84,8 @@ func formatTGMessage(msg *tgbotapi.Message) string {
 		user = msg.ReplyToMessage.From
 		text = msg.ReplyToMessage.Text
 	} else {
-		user = msg.ForwardFrom
-		text = msg.Text
+	user = msg.ForwardFrom
+	text = msg.Text
 	}
 
 	// Uncomment this to use the IRC nick on stored quotes
@@ -93,41 +93,6 @@ func formatTGMessage(msg *tgbotapi.Message) string {
 	if err != nil {
 		name = PrettyUser(user)
 	}
-
-	return fmt.Sprintf("%s: %s\n", name, text)
-}
-
-// RawQuote creates a string out from a list of raw quotes
-func RawQuote(msgs []*tgbotapi.Message) string {
-	var result string
-	for i := range msgs {
-		result = result + RawQuoteMessage(msgs[i])
-	}
-	return result
-}
-
-// RawQuoteMessage creates author: text from a raw message
-func RawQuoteMessage(msg *tgbotapi.Message) string {
-	var user *tgbotapi.User
-	var name, text string
-	if msg.ReplyToMessage != nil {
-		user = msg.ReplyToMessage.From
-		text = msg.ReplyToMessage.Text
-	} else {
-		user = msg.ForwardFrom
-		text = msg.Text
-	}
-
-	// Reverted to old behaviour
-	name = user.FirstName
-
-	/*
-		// Uncomment this to use the IRC nick on stored quotes
-		name, err := database.NickFromTGUser(user)
-		if err != nil {
-			name = user.String()
-		}
-	*/
 
 	return fmt.Sprintf("%s: %s\n", name, text)
 }
