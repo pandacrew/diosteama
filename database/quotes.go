@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"fmt"
 	"html"
 	"log"
@@ -45,17 +46,18 @@ func Info(recnum int, text ...string) (*quotes.Quote, error) {
 	var quote quotes.Quote
 	var order string
 
-	query := "SELECT recnum, quote, author, date, telegram_messages, telegram_author FROM linux_gey_db"
+	query := `SELECT recnum, quote, author, date, telegram_messages, telegram_author
+		 FROM linux_gey_db WHERE deleted is null`
 	where := ""
 	if len(text) > 0 {
-		where = fmt.Sprintf("WHERE LOWER(quote) LIKE LOWER('%%%s%%')", text[0])
+		where = fmt.Sprintf("AND LOWER(quote) LIKE LOWER('%%%s%%')", text[0])
 	}
 
 	if recnum < 1 {
 		log.Println("Random quote")
 		order = "ORDER BY random() LIMIT 1"
 	} else {
-		where = fmt.Sprintf("WHERE recnum = %d", recnum)
+		where = fmt.Sprintf("AND recnum = %d", recnum)
 	}
 	err := pool.QueryRow(context.Background(),
 		fmt.Sprintf("%s %s %s", query, where, order)).Scan(&quote.Recnum, &quote.Text, &quote.Author, &quote.Date, &quote.Messages, &quote.From)
@@ -77,7 +79,7 @@ func GetQuote(q string, offset int) (string, error) {
 	pq := strings.Replace(q, "*", "%", -1)
 	query := fmt.Sprintf(`
 	SELECT count(*)
-	FROM linux_gey_db WHERE LOWER(quote) LIKE LOWER('%%%s%%');`, pq)
+	FROM linux_gey_db WHERE deleted is null AND LOWER(quote) LIKE LOWER('%%%s%%');`, pq)
 	err := pool.QueryRow(context.Background(), query).Scan(&count)
 	if err != nil || count < 1 {
 		return fmt.Sprintf("Por %s no me sale nada", q), nil
@@ -85,7 +87,7 @@ func GetQuote(q string, offset int) (string, error) {
 
 	query = fmt.Sprintf(`
 	SELECT recnum, quote
-	FROM linux_gey_db WHERE LOWER(quote) LIKE LOWER('%%%s%%')
+	FROM linux_gey_db WHERE deleted is null AND LOWER(quote) LIKE LOWER('%%%s%%')
 	ORDER BY recnum ASC LIMIT 5 OFFSET %d;`, pq, offset)
 	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
@@ -124,7 +126,7 @@ func Top(i int) (string, error) {
 	if i < 0 {
 		i = 10
 	}
-	query := "select count(*) as c, split_part(author, '!', 1) as a from linux_gey_db group by a order by c desc limit $1;"
+	query := "select count(*) as c, split_part(author, '!', 1) as a from linux_gey_db where deleted is null group by a order by c desc limit $1;"
 	rows, err := pool.Query(context.Background(), query, i)
 	if err != nil {
 		log.Printf("Error listing top %d. Fuck you.", i)
@@ -152,4 +154,68 @@ func Top(i int) (string, error) {
 		return b.String(), err
 	}
 	return b.String(), err
+}
+
+// MarkQuoteAsDeleted marks a quote with identifier id as deleted
+func MarkQuoteAsDeleted(recnum int, user string) error {
+	quote, err := FindQuoteById(recnum, false)
+	if err != nil {
+		log.Printf("[MarkQuoteAsDeleted] Quote with id %d wasn't found", recnum)
+		return err
+	}
+	const updateStmt = `UPDATE linux_gey_db 
+		SET deleted = current_timestamp, deleted_by = $2
+		WHERE deleted is null AND recnum = $1;`
+
+	_, err = pool.Exec(context.Background(), updateStmt, quote.Recnum, user)
+
+	return err
+}
+
+// UnmarkQuoteAsDeleted marks a deleted quote with identifier id as undeleted
+func UnmarkQuoteAsDeleted(recnum int) error {
+	quote, err := FindQuoteById(recnum, true)
+	if err != nil {
+		log.Printf("[UnmarkQuoteAsDeleted] Quote with id %d wasn't found", recnum)
+		return err
+	}
+	const updateStmt = `UPDATE linux_gey_db 
+		SET deleted = null, deleted_by = null
+		WHERE deleted is not null AND recnum = $1;`
+
+	_, err = pool.Exec(context.Background(), updateStmt, quote.Recnum)
+
+	return err
+}
+
+var errDontMess = errors.New("don't mess with me! AKA no me toques lo que no suena")
+
+// FindQuoteById Finds a quote by it's unique id
+// recnum: quote id to find
+// includeDeleted: true to inlcude deleted quotes in search
+func FindQuoteById(recnum int, includeDeleted bool) (*quotes.Quote, error) {
+	if recnum < 1 {
+		return nil, errDontMess
+	}
+
+	var findQuoteByIdQuery = `
+		SELECT recnum, quote, author, date, telegram_messages, telegram_author
+		FROM linux_gey_db 
+		WHERE recnum = $1`
+
+	if !includeDeleted {
+		findQuoteByIdQuery += " AND deleted is null"
+	}
+
+	var quote quotes.Quote
+	err := pool.QueryRow(context.Background(), findQuoteByIdQuery, recnum).
+		Scan(&quote.Recnum, &quote.Text, &quote.Author, &quote.Date, &quote.Messages, &quote.From)
+
+	if err != nil {
+		log.Printf("[FindQuoteById] Error consultando DB: %v", err)
+		return nil, fmt.Errorf("%w", err)
+	}
+	log.Println(quote.Recnum, quote.Text, quote.Author, quote.Date)
+
+	return &quote, nil
 }

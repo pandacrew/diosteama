@@ -61,15 +61,6 @@ func quienes(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	bot.Send(msg)
 }
 
-func checkAdmin(bot *tgbotapi.BotAPI, ChatID int64, user *tgbotapi.User) bool {
-	member, err := bot.GetChatMember(tgbotapi.ChatConfigWithUser{
-		ChatID: ChatID,
-		UserID: user.ID,
-	})
-	fmt.Printf("\n%v\n", member)
-	return err == nil && (member.IsAdministrator() || member.IsCreator())
-}
-
 func es(update tgbotapi.Update, bot *tgbotapi.BotAPI, argv []string) {
 	var reply string
 
