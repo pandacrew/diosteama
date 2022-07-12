@@ -47,7 +47,7 @@ func saveQuotes(update tgbotapi.Update, bot *tgbotapi.BotAPI, q msgQueue) {
 		return
 	}
 	quote.Date = strconv.Itoa(update.Message.Date)
-	quote.Text = format.RawQuote(q.Messages)
+	quote.Text = format.FormatTGMessages(q.Messages)
 	quote.Author = format.PrettyUser(update.Message.From) // This would be better with a map of telegram users to irc nicks
 	quote.Messages = q.Messages
 	quote.From = update.Message.From
