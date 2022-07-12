@@ -80,13 +80,8 @@ func formatTGMessage(msg *tgbotapi.Message) string {
 	var user *tgbotapi.User
 	var name, text string
 
-	if msg.ReplyToMessage != nil {
-		user = msg.ReplyToMessage.From
-		text = msg.ReplyToMessage.Text
-	} else {
 	user = msg.ForwardFrom
 	text = msg.Text
-	}
 
 	// Uncomment this to use the IRC nick on stored quotes
 	name, err := database.NickFromTGUser(user)
