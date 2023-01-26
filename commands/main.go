@@ -43,5 +43,7 @@ func Command(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		repite(update, bot, args)
 	case "patron":
 		patron(update, bot, args)
+	case "manager":
+		manager(update, bot, args)
 	}
 }
