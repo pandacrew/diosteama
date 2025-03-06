@@ -47,4 +47,11 @@ func Triggers(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		bot.Send(msg)
 		return
 	}
+	if strings.Contains(strings.ToLower(update.Message.Text), "https://github.com/pandacrew/diosteama/") {
+		reply := "sibis qui li di \"iciptimis PR\" is in inti-pittirn, virdid?"
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
+		bot.Send(msg)
+		return
+	}
+
 }
